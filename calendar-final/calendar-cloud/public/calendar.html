@@ -56,14 +56,17 @@ body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; backgr
 
 .ev-chip { font-size: 9px; font-weight: 600; border-radius: 4px; padding: 1.5px 4px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.5; cursor: pointer; }
 .ev-more { font-size: 9px; color: var(--ink-faint); padding: 0 2px; text-align: center; }
-.ev-blue   { background: #E3EEFA; color: #1B5C9E; }
-.ev-green  { background: #E5F4EF; color: #257A5C; }
-.ev-red    { background: #FBEAE7; color: #B8472F; }
-.ev-amber  { background: #FCF0DC; color: #9A6A0C; }
-.ev-purple { background: #ECEAFA; color: #5849C4; }
-.ev-teal   { background: #DFF3EF; color: #0E7C68; }
-.ev-pink   { background: #FBE7EF; color: #BC3B6B; }
-.ev-gray   { background: #EEEEEC; color: #5C5C58; }
+.ev-blue   { background: #1565C0; color: #fff; }
+.ev-red    { background: #C62828; color: #fff; }
+.ev-yellow { background: #F9A825; color: #333; }
+.ev-orange { background: #E65100; color: #fff; }
+.ev-green  { background: #2E7D32; color: #fff; }
+.ev-pink   { background: #AD1457; color: #fff; }
+/* 旧色の後方互換 */
+.ev-amber  { background: #F9A825; color: #333; }
+.ev-purple { background: #1565C0; color: #fff; }
+.ev-teal   { background: #2E7D32; color: #fff; }
+.ev-gray   { background: #555; color: #fff; }
 
 .day-list-wrap { background: var(--surface); margin-top: 8px; }
 .day-list-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px 8px; }
@@ -78,10 +81,12 @@ body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; backgr
 .day-ev-fixed-tag { font-size: 9px; color: var(--ink-soft); background: var(--bg); border-radius: 4px; padding: 2px 6px; flex-none; }
 .day-empty { text-align: center; padding: 24px; color: var(--ink-faint); font-size: 13px; }
 
-.dot-blue{background:#1B5C9E}.dot-green{background:#257A5C}.dot-red{background:#B8472F}.dot-amber{background:#9A6A0C}
-.dot-purple{background:#5849C4}.dot-teal{background:#0E7C68}.dot-pink{background:#BC3B6B}.dot-gray{background:#5C5C58}
-.row-blue{background:#E3EEFA}.row-green{background:#E5F4EF}.row-red{background:#FBEAE7}.row-amber{background:#FCF0DC}
-.row-purple{background:#ECEAFA}.row-teal{background:#DFF3EF}.row-pink{background:#FBE7EF}.row-gray{background:#EEEEEC}
+.dot-blue{background:#1565C0}.dot-green{background:#2E7D32}.dot-red{background:#C62828}.dot-amber{background:#F9A825}
+.dot-purple{background:#1565C0}.dot-teal{background:#2E7D32}.dot-pink{background:#AD1457}.dot-gray{background:#555}
+.dot-yellow{background:#F9A825}.dot-orange{background:#E65100}
+.row-blue{background:#BBDEFB}.row-green{background:#C8E6C9}.row-red{background:#FFCDD2}.row-amber{background:#FFF9C4}
+.row-purple{background:#BBDEFB}.row-teal{background:#C8E6C9}.row-pink{background:#FCE4EC}.row-gray{background:#EEE}
+.row-yellow{background:#FFF9C4}.row-orange{background:#FFE0B2}
 
 .fab { position: fixed; right: 18px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: white; border: none; box-shadow: 0 4px 14px rgba(61,170,138,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; }
 .fab:active { background: var(--accent-dark); }
@@ -427,8 +432,9 @@ const API = (path, opt) => fetch(path, { ...opt, headers: { 'Content-Type':'appl
 const DOWS = ['日','月','火','水','木','金','土'];
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const COLORS = [
-  {key:'blue',  hex:'#1B5C9E'}, {key:'green', hex:'#257A5C'}, {key:'red',   hex:'#B8472F'}, {key:'amber', hex:'#9A6A0C'},
-  {key:'purple',hex:'#5849C4'}, {key:'teal',  hex:'#0E7C68'}, {key:'pink',  hex:'#BC3B6B'}, {key:'gray',  hex:'#5C5C58'}
+  {key:'blue',   hex:'#1565C0'}, {key:'red',    hex:'#C62828'},
+  {key:'yellow', hex:'#F9A825'}, {key:'orange', hex:'#E65100'},
+  {key:'green',  hex:'#2E7D32'}, {key:'pink',   hex:'#AD1457'}
 ];
 
 let data = { events: [], fixedSchedules: {}, fixedExceptions: {} };
@@ -994,8 +1000,15 @@ function drawCalendar(canvas, W, H, year, month) {
   });
 
   // セル描画（テキスト2行対応・下から積み上げ）
-  const colorMap = { blue:'#E3EEFA', green:'#E5F4EF', red:'#FBEAE7', amber:'#FCF0DC', purple:'#ECEAFA', teal:'#DFF3EF', pink:'#FBE7EF', gray:'#EEEEEC' };
-  const fgMap    = { blue:'#1B5C9E', green:'#257A5C', red:'#B8472F', amber:'#9A6A0C', purple:'#5849C4', teal:'#0E7C68', pink:'#BC3B6B', gray:'#5C5C58' };
+  const colorMap = {
+    blue:'#1565C0', red:'#C62828', yellow:'#F9A825', orange:'#E65100', green:'#2E7D32', pink:'#AD1457',
+    // 旧色の後方互換
+    amber:'#F9A825', purple:'#1565C0', teal:'#2E7D32', gray:'#555555'
+  };
+  const fgMap = {
+    blue:'#fff', red:'#fff', yellow:'#333', orange:'#fff', green:'#fff', pink:'#fff',
+    amber:'#333', purple:'#fff', teal:'#fff', gray:'#fff'
+  };
 
   // ── 補助関数：テキストを折り返して最大2行で描画（x=中央座標） ──
   // ── テキスト折り返し描画（左揃え、x=左端座標） ──
@@ -1063,58 +1076,95 @@ function drawCalendar(canvas, W, H, year, month) {
 
     // ── 予定：上から縦に並べる（固定→個別、時系列） ──
     const rawEvts = getEventsForDay(year, month, day);
-    const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順
+    const fixedEvts = rawEvts.filter(e => e.fixed);
     const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
     const evts = [...fixedEvts, ...indivEvts];
 
-    const PAD_L = colW * 0.05;
-    const evStartY = numY + numFs * 0.3; // 日付の直下から
+    if (!evts.length) continue;
+
+    const PAD_L = colW * 0.04;
     const evW = colW - PAD_L * 2;
+
+    // ── メインエリア（日付下）に収まる件数を計算 ──
+    const evStartY = numY + numFs * 0.3;
+    const availH = rowH - (evStartY - y) - PAD_L;
     const lineH = rowH * 0.145;
-    const lineGap = rowH * 0.025;
-    const maxLines = Math.floor((rowH - (evStartY - y) - lineGap) / (lineH + lineGap));
+    const lineGap = rowH * 0.022;
     const textFs = lineH * 0.72;
 
-    let curEvY = evStartY + lineH;
-    let linesUsed = 0;
-    let shown = 0;
-
-    for (const ev of evts) {
-      if (linesUsed >= maxLines) break;
-      const bgColor = colorMap[ev.color||'blue'] || '#E3EEFA';
-      const fgColor = fgMap[ev.color||'blue'] || '#1B5C9E';
+    // まず全予定が必要な行数を計算
+    ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
+    const evInfos = evts.map(ev => {
       const label = (ev.ts ? ev.ts + ' ' : '') + ev.text;
+      const wrap = ctx.measureText(label).width > evW - 4;
+      return { ev, label, wrap, lines: wrap ? 2 : 1 };
+    });
 
-      ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
-      const needsWrap = ctx.measureText(label).width > evW - 4;
-      const linesNeeded = needsWrap ? 2 : 1;
+    // メインエリアに入る件数
+    let mainLines = 0, mainCount = 0;
+    for (const info of evInfos) {
+      const needed = (info.lines * lineH) + ((mainCount > 0 ? 1 : 0) * lineGap);
+      if (mainLines + needed > availH) break;
+      mainLines += needed + lineGap;
+      mainCount++;
+    }
 
-      if (linesUsed + linesNeeded > maxLines) {
-        // 残りがあれば「+N件」表示
-        const rem = evts.length - shown;
-        if (rem > 0) {
-          ctx.fillStyle = '#888';
-          ctx.font = `500 ${textFs * 0.85}px -apple-system,sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.fillText(`+${rem}件`, x + PAD_L, curEvY);
-        }
-        break;
-      }
+    // メインエリアに描画
+    let curEvY = evStartY + lineH;
+    for (let i = 0; i < mainCount; i++) {
+      const { ev, label, wrap, lines } = evInfos[i];
+      const bgColor = colorMap[ev.color||'blue'] || '#1565C0';
+      const fgColor = fgMap[ev.color||'blue'] || '#fff';
+      const barH = (lines * lineH) + (lines > 1 ? lineGap * 0.5 : 0) + lineGap * 0.3;
 
-      // 背景バー
-      const barH = (linesNeeded === 2 ? lineH * 2 + lineGap * 0.5 : lineH) + lineGap * 0.4;
       ctx.fillStyle = bgColor;
       if (ctx.roundRect) {
         ctx.beginPath(); ctx.roundRect(x + PAD_L, curEvY - lineH + 1, evW, barH, 2); ctx.fill();
       } else {
         ctx.fillRect(x + PAD_L, curEvY - lineH + 1, evW, barH);
       }
-
       ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
-      const usedH = drawWrappedText(ctx, label, x + PAD_L + 2, curEvY, evW - 4, lineH, fgColor);
-      curEvY += usedH + lineGap;
-      linesUsed += linesNeeded;
-      shown++;
+      drawWrappedText(ctx, label, x + PAD_L + 2, curEvY, evW - 4, lineH, fgColor);
+      curEvY += barH + lineGap * 0.5;
+    }
+
+    // ── 溢れた予定：日付番号の右横に小さく表示 ──
+    if (mainCount < evts.length) {
+      const overflow = evInfos.slice(mainCount);
+      const overFs = numFs * 0.78;
+      ctx.font = `600 ${overFs}px -apple-system,sans-serif`;
+      // 日付番号の右端から利用できる幅
+      const dayNumRight = x + numPad + ctx.measureText(String(day)).width + numFs * 0.3;
+      const overW = x + colW - dayNumRight - PAD_L;
+      let ox = dayNumRight;
+      let oy = y + overFs + 2;
+      const overLineH = overFs * 1.15;
+
+      for (const { ev, label } of overflow) {
+        const bgColor = colorMap[ev.color||'blue'] || '#1565C0';
+        const fgColor = fgMap[ev.color||'blue'] || '#fff';
+        ctx.font = `600 ${overFs}px -apple-system,sans-serif`;
+
+        // テキストを幅に合わせて切り詰め
+        let txt = label;
+        while (ctx.measureText(txt).width > overW - 4 && txt.length > 1) txt = txt.slice(0, -1);
+        if (txt !== label) txt = txt.slice(0, -1) + '…';
+
+        const tw = ctx.measureText(txt).width + 4;
+        ctx.fillStyle = bgColor;
+        if (ctx.roundRect) {
+          ctx.beginPath(); ctx.roundRect(ox, oy - overFs + 1, tw, overLineH, 2); ctx.fill();
+        } else {
+          ctx.fillRect(ox, oy - overFs + 1, tw, overLineH);
+        }
+        ctx.fillStyle = fgColor;
+        ctx.textAlign = 'left';
+        ctx.fillText(txt, ox + 2, oy);
+
+        oy += overLineH + 1.5;
+        // 日付番号エリアの下限を超えたら止める
+        if (oy > evStartY) break;
+      }
     }
   }
 
