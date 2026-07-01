@@ -627,7 +627,10 @@ function renderDayList() {
   document.getElementById('sel-day-num').textContent = day;
   document.getElementById('sel-day-dow').textContent = DOWS[dow] + '曜日';
 
-  const evts = getEventsForDay(year, month, day);
+  const rawEvts = getEventsForDay(year, month, day);
+  const fixedEvts = rawEvts.filter(e => e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+  const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+  const evts = [...fixedEvts, ...indivEvts];
   const el = document.getElementById('day-list');
   if (!evts.length) { el.innerHTML = '<div class="day-empty">予定はありません</div>'; return; }
 
@@ -945,9 +948,9 @@ function drawCalendar(canvas, W, H, year, month) {
   const offsetTop = hasTop ? MOTTO_H : 0;
   const offsetBottom = hasBottom ? MOTTO_H : 0;
 
-  const PAD = W * 0.022;
-  const HDR = H * 0.082;
-  const DOW_H = H * 0.05;
+  const PAD = W * 0.018;
+  const HDR = H * 0.088;
+  const DOW_H = H * 0.052;
   const gridY = offsetTop + HDR + DOW_H;
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDow = new Date(year, month-1, 1).getDay();
@@ -958,97 +961,158 @@ function drawCalendar(canvas, W, H, year, month) {
 
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
 
+  // 標語（上部）
   if (hasTop) {
     ctx.fillStyle = '#E5F4EF';
     ctx.fillRect(0, 0, W, MOTTO_H);
     ctx.fillStyle = '#257A5C';
-    ctx.font = `700 ${MOTTO_H * 0.48}px -apple-system,sans-serif`;
+    ctx.font = `700 ${MOTTO_H * 0.5}px -apple-system,sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(motto.top, W/2, MOTTO_H / 2);
     ctx.textBaseline = 'alphabetic';
   }
 
+  // ヘッダー
   ctx.fillStyle = '#3DAA8A'; ctx.fillRect(0, offsetTop, W, HDR);
-
   const userName = sessionStorage.getItem('cal-name') || '';
   if (userName) {
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.font = `500 ${H*0.026}px -apple-system,sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = `600 ${H*0.03}px -apple-system,sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText(userName, PAD + 4, offsetTop + HDR*0.52);
+    ctx.fillText(userName, PAD + 6, offsetTop + HDR*0.55);
   }
-
-  ctx.fillStyle = '#fff'; ctx.font = `700 ${H*0.038}px -apple-system,sans-serif`;
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${H*0.044}px -apple-system,sans-serif`;
   ctx.textAlign = 'center';
-  ctx.fillText(year+'年 '+MONTHS[month-1], W/2, offsetTop + HDR*0.68);
+  ctx.fillText(year+'年 '+MONTHS[month-1], W/2, offsetTop + HDR*0.72);
 
+  // 曜日ヘッダー
   DOWS.forEach((d, i) => {
-    ctx.fillStyle = i===0?'#E2685A':i===6?'#4A90C9':'#888780';
-    ctx.font = `700 ${H*0.026}px -apple-system,sans-serif`;
+    ctx.fillStyle = i===0?'#E2685A':i===6?'#4A90C9':'#555';
+    ctx.font = `700 ${H*0.03}px -apple-system,sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(d, PAD + colW*i + colW/2, offsetTop + HDR + DOW_H*0.74);
+    ctx.fillText(d, PAD + colW*i + colW/2, offsetTop + HDR + DOW_H*0.76);
   });
+
+  // セル描画（テキスト2行対応・下から積み上げ）
+  const colorMap = { blue:'#E3EEFA', green:'#E5F4EF', red:'#FBEAE7', amber:'#FCF0DC', purple:'#ECEAFA', teal:'#DFF3EF', pink:'#FBE7EF', gray:'#EEEEEC' };
+  const fgMap    = { blue:'#1B5C9E', green:'#257A5C', red:'#B8472F', amber:'#9A6A0C', purple:'#5849C4', teal:'#0E7C68', pink:'#BC3B6B', gray:'#5C5C58' };
+
+  // ── 補助関数：テキストを折り返して最大2行で描画 ──
+  function drawWrappedText(ctx, text, x, y, maxW, lineH, color) {
+    ctx.fillStyle = color;
+    // 1行に収まるか
+    if (ctx.measureText(text).width <= maxW) {
+      ctx.fillText(text, x, y);
+      return lineH; // 使用した高さ
+    }
+    // 2行に分割
+    let line1 = '';
+    for (let i = 0; i < text.length; i++) {
+      if (ctx.measureText(line1 + text[i]).width > maxW) break;
+      line1 += text[i];
+    }
+    const line2raw = text.slice(line1.length);
+    let line2 = '';
+    for (let i = 0; i < line2raw.length; i++) {
+      const next = line2 + line2raw[i];
+      if (ctx.measureText(next).width > maxW - ctx.measureText('…').width && i < line2raw.length-1) {
+        line2 += '…'; break;
+      }
+      line2 += line2raw[i];
+    }
+    ctx.fillText(line1, x, y);
+    ctx.fillText(line2, x, y + lineH * 0.9);
+    return lineH * 1.9; // 2行分の高さ
+  }
 
   for (let cell = 0; cell < rows*7; cell++) {
     const day = cell - firstDow + 1;
     const col = cell%7, row = Math.floor(cell/7);
     const x = PAD + col*colW, y = gridY + row*rowH;
-    ctx.strokeStyle = '#ECECEC'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, colW, rowH);
+
+    // 罫線（日付ごとに濃い線）
+    ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, colW, rowH);
 
     if (day < 1 || day > daysInMonth) {
-      ctx.fillStyle = '#FAFAFA'; ctx.fillRect(x+0.5, y+0.5, colW-1, rowH-1);
+      ctx.fillStyle = '#F5F5F5'; ctx.fillRect(x+1, y+1, colW-2, rowH-2);
       continue;
     }
 
     const isToday = (day===today.getDate() && month===today.getMonth()+1 && year===today.getFullYear());
-    if (isToday) { ctx.fillStyle = '#E5F4EF'; ctx.fillRect(x+0.5, y+0.5, colW-1, rowH-1); }
+    if (isToday) { ctx.fillStyle = '#E5F4EF'; ctx.fillRect(x+1, y+1, colW-2, rowH-2); }
 
+    // 日付番号
     const numColor = col===0?'#E2685A':col===6?'#4A90C9':'#2B2B2B';
     if (isToday) {
       ctx.fillStyle = '#3DAA8A';
-      ctx.beginPath(); ctx.arc(x+colW*0.12, y+rowH*0.15, rowH*0.13, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+colW*0.13, y+rowH*0.14, rowH*0.115, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = '#fff';
     } else { ctx.fillStyle = numColor; }
-    ctx.font = `700 ${rowH*0.19}px -apple-system,sans-serif`;
+    ctx.font = `700 ${rowH*0.18}px -apple-system,sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(String(day), x+colW*0.12, y+rowH*0.22);
+    ctx.fillText(String(day), x+colW*0.13, y+rowH*0.2);
 
-    const evts = getEventsForDay(year, month, day);
-    const lineH = rowH * 0.155;
-    const maxE = Math.max(1, Math.floor((rowH*0.72)/(lineH+2)));
-    const colorMap = { blue:'#E3EEFA', green:'#E5F4EF', red:'#FBEAE7', amber:'#FCF0DC', purple:'#ECEAFA', teal:'#DFF3EF', pink:'#FBE7EF', gray:'#EEEEEC' };
-    const fgMap    = { blue:'#1B5C9E', green:'#257A5C', red:'#B8472F', amber:'#9A6A0C', purple:'#5849C4', teal:'#0E7C68', pink:'#BC3B6B', gray:'#5C5C58' };
+    // 予定取得：固定を先に、次に個別、時系列ソート
+    const rawEvts = getEventsForDay(year, month, day);
+    const fixedEvts = rawEvts.filter(e => e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+    const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+    const evts = [...fixedEvts, ...indivEvts];
 
-    evts.slice(0, maxE).forEach((ev, ei) => {
-      const ey = y + rowH*0.26 + ei*(lineH+2);
-      const ew = colW*0.88, ex = x+colW*0.06;
+    // 予定チップ：下から積み上げ（2行対応）
+    const lineH = rowH * 0.165;
+    const chipGap = 2;
+    const numAreaH = rowH * 0.27; // 日付番号エリア
+    const availH = rowH - numAreaH - chipGap;
+
+    // まず何件入るか計算（2行チップも考慮して単純に1行として計算）
+    const maxE = Math.max(1, Math.floor(availH / (lineH + chipGap)));
+    const showEvts = evts.slice(0, maxE);
+    const moreCount = evts.length - showEvts.length;
+
+    // 下から積み上げ：最下段から描画
+    let curY = y + rowH - chipGap;
+    const chipsToRender = [...showEvts].reverse();
+    chipsToRender.forEach((ev) => {
+      const ew = colW * 0.9;
+      const ex = x + colW * 0.05;
+      const textFs = lineH * 0.56;
+      ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
+
+      // テキスト内容
+      const label = (ev.ts ? ev.ts+' ' : '') + ev.text;
+      const needsWrap = ctx.measureText(label).width > ew - 6;
+      const chipH = needsWrap ? lineH * 1.95 : lineH;
+
+      const ey = curY - chipH;
       ctx.fillStyle = colorMap[ev.color||'blue'] || '#E3EEFA';
-      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(ex,ey,ew,lineH,2); ctx.fill(); }
-      else { ctx.fillRect(ex,ey,ew,lineH); }
-      ctx.fillStyle = fgMap[ev.color||'blue'] || '#1B5C9E';
-      ctx.font = `600 ${lineH*0.58}px -apple-system,sans-serif`;
-      ctx.textAlign = 'left';
-      let label = (ev.ts ? ev.ts+' ' : '') + ev.text;
-      while (ctx.measureText(label).width > ew-5 && label.length>1) label=label.slice(0,-1);
-      if (label!==((ev.ts?ev.ts+' ':'')+ev.text)) label=label.slice(0,-1)+'…';
-      ctx.fillText(label, ex+3, ey+lineH*0.76);
+      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(ex, ey, ew, chipH, 2); ctx.fill(); }
+      else { ctx.fillRect(ex, ey, ew, chipH); }
+
+      ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
+      drawWrappedText(ctx, label, ex+3, ey + lineH*0.72, ew-6, lineH*0.9, fgMap[ev.color||'blue'] || '#1B5C9E');
+
+      curY = ey - chipGap;
     });
-    if (evts.length > maxE) {
-      ctx.fillStyle = '#B3B3B3'; ctx.font = `400 ${rowH*0.11}px sans-serif`;
+
+    if (moreCount > 0) {
+      ctx.fillStyle = '#999'; ctx.font = `400 ${rowH*0.115}px sans-serif`;
       ctx.textAlign = 'right';
-      ctx.fillText(`+${evts.length-maxE}`, x+colW-colW*0.04, y+rowH-rowH*0.04);
+      ctx.fillText(`+${moreCount}`, x+colW-colW*0.04, y+rowH*0.22);
     }
   }
 
-  ctx.strokeStyle = '#ECECEC'; ctx.lineWidth = 1;
+  // グリッド外枠（濃い線）
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5;
   ctx.strokeRect(PAD, gridY, colW*7, rowH*rows);
 
+  // 標語（下部）
   if (hasBottom) {
     const by = H - offsetBottom;
     ctx.fillStyle = '#E5F4EF';
     ctx.fillRect(0, by, W, MOTTO_H);
     ctx.fillStyle = '#257A5C';
-    ctx.font = `700 ${MOTTO_H * 0.48}px -apple-system,sans-serif`;
+    ctx.font = `700 ${MOTTO_H * 0.5}px -apple-system,sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(motto.bottom, W/2, by + MOTTO_H / 2);
     ctx.textBaseline = 'alphabetic';
