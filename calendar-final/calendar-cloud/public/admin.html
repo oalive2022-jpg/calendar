@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 カレンダー管理者画面</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; background: #eef2f8; color: #1a1a18; min-height: 100vh; }
+.header { background: #0C447C; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 17px; font-weight: 700; }
+.btn-logout { background: rgba(255,255,255,.15); border: none; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+.main { max-width: 680px; margin: 0 auto; padding: 20px 16px 40px; }
+.card { background: white; border-radius: 14px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.card h2 { font-size: 15px; font-weight: 700; color: #0C447C; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+label { font-size: 13px; color: #555; display: block; margin-bottom: 4px; margin-top: 12px; }
+label:first-of-type { margin-top: 0; }
+input[type="text"], input[type="password"] {
+  width: 100%; height: 44px; border: 1.5px solid #dde4ed; border-radius: 10px;
+  padding: 0 12px; font-size: 15px; background: #fafbfc; outline: none;
+}
+input:focus { border-color: #378ADD; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-primary { height: 46px; background: #185FA5; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 20px; }
+.btn-primary:active { background: #0C447C; }
+.btn-primary.full { width: 100%; margin-top: 14px; }
+.user-list { display: flex; flex-direction: column; gap: 8px; }
+.user-row { display: flex; align-items: center; gap: 10px; background: #f7f9fc; border: 1px solid #e8edf4; border-radius: 10px; padding: 12px 14px; }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #185FA5; flex-none; }
+.user-info { flex: 1; }
+.user-name { font-size: 15px; font-weight: 600; }
+.user-id { font-size: 12px; color: #888; margin-top: 2px; }
+.btn-edit { background: white; border: 1.5px solid #b5d4f4; border-radius: 8px; color: #185FA5; font-size: 12px; padding: 5px 12px; cursor: pointer; }
+.btn-del { background: white; border: 1.5px solid #f0b0ad; border-radius: 8px; color: #c0392b; font-size: 12px; padding: 5px 12px; cursor: pointer; }
+.btn-edit:active { background: #E6F1FB; }
+.btn-del:active { background: #FAECE7; }
+.user-motto { font-size: 11px; color: #378ADD; margin-top: 2px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0C447C; color: white; padding: 10px 22px; border-radius: 30px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; z-index: 999; }
+.toast.show { opacity: 1; }
+.section-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+/* モーダル */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; }
+.modal-bg.show { display: flex; }
+.modal { background: white; border-radius: 16px; padding: 24px 20px; width: 92%; max-width: 400px; }
+.modal h3 { font-size: 16px; font-weight: 700; color: #0C447C; margin-bottom: 16px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 16px; }
+.btn-cancel { flex: 1; height: 44px; background: #eef2f8; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-save { flex: 2; height: 44px; background: #185FA5; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+<header class="header">
+  <div>
+    <h1>📅 カレンダー管理者</h1>
+  </div>
+  <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+</header>
+
+<div class="main">
+
+  <!-- ユーザー追加 -->
+  <div class="card">
+    <h2>👤 ユーザーを追加</h2>
+    <div class="row2">
+      <div>
+        <label>表示名（例：山田 太郎）</label>
+        <input type="text" id="add-name" placeholder="表示名">
+      </div>
+      <div>
+        <label>ユーザー名（ログインID）</label>
+        <input type="text" id="add-username" placeholder="yamada" autocomplete="off">
+      </div>
+    </div>
+    <label>パスワード</label>
+    <input type="password" id="add-password" placeholder="パスワードを設定" autocomplete="new-password">
+    <label>標語（カレンダー上部）</label>
+    <input type="text" id="add-motto-top" placeholder="例：一日一善　今日も笑顔で">
+    <label>標語（カレンダー下部）</label>
+    <input type="text" id="add-motto-bottom" placeholder="例：健康第一　無理せず着実に">
+    <button class="btn-primary full" onclick="addUser()">➕ ユーザーを追加</button>
+  </div>
+
+  <!-- ユーザー一覧 -->
+  <div class="card">
+    <h2>👥 ユーザー一覧</h2>
+    <div class="user-list" id="user-list">
+      <div class="empty">読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- 管理者パスワード変更 -->
+  <div class="card">
+    <h2>🔒 管理者パスワード変更</h2>
+    <label>新しいパスワード</label>
+    <input type="password" id="new-admin-pw" placeholder="新しいパスワード（4文字以上）">
+    <button class="btn-primary full" onclick="changeAdminPw()">パスワードを変更</button>
+  </div>
+
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <h3>✏️ ユーザーを編集</h3>
+    <input type="hidden" id="edit-id">
+    <label>表示名</label>
+    <input type="text" id="edit-name" placeholder="表示名">
+    <label>新しいパスワード（変更する場合のみ）</label>
+    <input type="password" id="edit-password" placeholder="空白のままなら変更しない">
+    <label>標語（カレンダー上部）</label>
+    <input type="text" id="edit-motto-top" placeholder="例：一日一善　今日も笑顔で">
+    <label>標語（カレンダー下部）</label>
+    <input type="text" id="edit-motto-bottom" placeholder="例：健康第一　無理せず着実に">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="btn-save" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = () => sessionStorage.getItem('cal-token');
+const API = (path, opt) => fetch(path, { ...opt, headers: { 'Content-Type':'application/json', 'x-session-token': TOKEN(), ...(opt?.headers||{}) } });
+
+(async function init() {
+  const res = await API('/api/me');
+  const me = await res.json();
+  if (!res.ok || me.role !== 'admin') { location.href = '/login.html'; return; }
+  loadUsers();
+})();
+
+async function loadUsers() {
+  const res = await API('/api/users');
+  const users = await res.json();
+  const el = document.getElementById('user-list');
+  if (!users.length) { el.innerHTML = '<div class="empty">ユーザーがいません。追加してください。</div>'; return; }
+  el.innerHTML = users.map(u => {
+    const mt = (u.mottoTop||'').replace(/'/g,"&#39;");
+    const mb = (u.mottoBottom||'').replace(/'/g,"&#39;");
+    return `<div class="user-row">
+      <div class="user-avatar">${u.name.charAt(0)}</div>
+      <div class="user-info">
+        <div class="user-name">${u.name}</div>
+        <div class="user-id">@${u.username}</div>
+        ${u.mottoTop    ? `<div class="user-motto">上：${u.mottoTop}</div>` : ''}
+        ${u.mottoBottom ? `<div class="user-motto">下：${u.mottoBottom}</div>` : ''}
+      </div>
+      <button class="btn-edit" onclick="openEdit('${u.id}','${u.name}','${mt}','${mb}')">編集</button>
+      <button class="btn-del" onclick="delUser('${u.id}','${u.name}')">削除</button>
+    </div>`;
+  }).join('');
+}
+
+async function addUser() {
+  const name = document.getElementById('add-name').value.trim();
+  const username = document.getElementById('add-username').value.trim();
+  const password = document.getElementById('add-password').value;
+  const mottoTop = document.getElementById('add-motto-top').value.trim();
+  const mottoBottom = document.getElementById('add-motto-bottom').value.trim();
+  if (!name || !username || !password) { showToast('名前・ユーザー名・パスワードを入力してください'); return; }
+  const res = await API('/api/users', { method:'POST', body: JSON.stringify({ name, username, password, mottoTop, mottoBottom }) });
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error || 'エラーが発生しました'); return; }
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-username').value = '';
+  document.getElementById('add-password').value = '';
+  document.getElementById('add-motto-top').value = '';
+  document.getElementById('add-motto-bottom').value = '';
+  showToast(name + ' を追加しました ✓');
+  loadUsers();
+}
+
+async function delUser(id, name) {
+  if (!confirm(name + ' を削除しますか？\nカレンダーデータも削除されます。')) return;
+  await API('/api/users/' + id, { method: 'DELETE' });
+  showToast(name + ' を削除しました');
+  loadUsers();
+}
+
+function openEdit(id, name, mottoTop, mottoBottom) {
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-password').value = '';
+  document.getElementById('edit-motto-top').value = mottoTop || '';
+  document.getElementById('edit-motto-bottom').value = mottoBottom || '';
+  document.getElementById('edit-modal').classList.add('show');
+}
+function closeEdit() { document.getElementById('edit-modal').classList.remove('show'); }
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const name = document.getElementById('edit-name').value.trim();
+  const password = document.getElementById('edit-password').value;
+  if (!name) { showToast('表示名を入力してください'); return; }
+  const mottoTop = document.getElementById('edit-motto-top').value.trim();
+  const mottoBottom = document.getElementById('edit-motto-bottom').value.trim();
+  const body = { name, mottoTop, mottoBottom };
+  if (password) body.password = password;
+  await API('/api/users/' + id, { method: 'PUT', body: JSON.stringify(body) });
+  closeEdit();
+  showToast('更新しました ✓');
+  loadUsers();
+}
+
+async function changeAdminPw() {
+  const pw = document.getElementById('new-admin-pw').value;
+  if (!pw || pw.length < 4) { showToast('4文字以上で入力してください'); return; }
+  const res = await API('/api/config/password', { method: 'POST', body: JSON.stringify({ password: pw }) });
+  if (res.ok) { document.getElementById('new-admin-pw').value = ''; showToast('パスワードを変更しました ✓'); }
+}
+
+async function doLogout() {
+  await API('/api/logout', { method: 'POST' });
+  sessionStorage.clear();
+  location.href = '/login.html';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

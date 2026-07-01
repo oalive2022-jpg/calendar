@@ -1,0 +1,14 @@
+{
+  "name": "calendar-server",
+  "version": "1.0.0",
+  "description": "月間カレンダー管理サーバー",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "web-push": "^3.6.7",
+    "pg": "^8.13.1"
+  }
+}

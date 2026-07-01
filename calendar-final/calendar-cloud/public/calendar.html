@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="カレンダー">
+<meta name="theme-color" content="#ffffff">
+<title>📅 カレンダー</title>
+<style>
+:root {
+  --accent: #3DAA8A;
+  --accent-dark: #2A8068;
+  --accent-light: #E5F4EF;
+  --sun: #E2685A;
+  --sat: #4A90C9;
+  --ink: #2B2B2B;
+  --ink-soft: #767676;
+  --ink-faint: #B3B3B3;
+  --line: #ECECEC;
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+.header { background: var(--surface); border-bottom: 1px solid var(--line); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.avatar-mini { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-none; }
+.header-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.header-sub { font-size: 11px; color: var(--ink-soft); }
+.btn-logout { background: none; border: none; color: var(--ink-soft); font-size: 12px; cursor: pointer; padding: 6px 8px; }
+
+.month-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.month-title { font-size: 19px; font-weight: 700; color: var(--ink); letter-spacing: .01em; }
+.month-title .nen { font-size: 13px; font-weight: 500; color: var(--ink-soft); margin-right: 4px; }
+.nav-btn { background: none; border: none; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); border-radius: 50%; }
+.nav-btn:active { background: var(--bg); }
+.nav-btn svg { width: 20px; height: 20px; }
+.btn-today { font-size: 11px; color: var(--accent); background: var(--accent-light); border: none; border-radius: 20px; padding: 5px 12px; cursor: pointer; font-weight: 600; }
+
+.cal-wrap { background: var(--surface); padding-bottom: 4px; }
+.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); padding: 6px 4px 2px; }
+.cal-dow-cell { text-align: center; font-size: 10px; font-weight: 700; color: var(--ink-faint); padding: 4px 0; }
+.cal-dow-cell.sun { color: var(--sun); }
+.cal-dow-cell.sat { color: var(--sat); }
+.cal-cells { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 4px; }
+.cal-cell { min-height: 76px; padding: 4px 2px 2px; position: relative; cursor: pointer; border-top: 1px solid var(--line); }
+.cal-cell:active { background: var(--bg); }
+.cal-cell.other-month .day-num { color: var(--ink-faint); opacity: .45; }
+.day-num { font-size: 12px; font-weight: 600; color: var(--ink); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 2px; border-radius: 50%; }
+.cal-cell:nth-child(7n+1) .day-num { color: var(--sun); }
+.cal-cell:nth-child(7n) .day-num { color: var(--sat); }
+.cal-cell.today .day-num { background: var(--accent); color: white !important; }
+
+.ev-chip { font-size: 9px; font-weight: 600; border-radius: 4px; padding: 1.5px 4px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.5; cursor: pointer; }
+.ev-more { font-size: 9px; color: var(--ink-faint); padding: 0 2px; text-align: center; }
+.ev-blue   { background: #E3EEFA; color: #1B5C9E; }
+.ev-green  { background: #E5F4EF; color: #257A5C; }
+.ev-red    { background: #FBEAE7; color: #B8472F; }
+.ev-amber  { background: #FCF0DC; color: #9A6A0C; }
+.ev-purple { background: #ECEAFA; color: #5849C4; }
+.ev-teal   { background: #DFF3EF; color: #0E7C68; }
+.ev-pink   { background: #FBE7EF; color: #BC3B6B; }
+.ev-gray   { background: #EEEEEC; color: #5C5C58; }
+
+.day-list-wrap { background: var(--surface); margin-top: 8px; }
+.day-list-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px 8px; }
+.day-list-head .dnum { font-size: 22px; font-weight: 700; }
+.day-list-head .ddow { font-size: 12px; color: var(--ink-soft); font-weight: 600; }
+.day-list { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.day-ev-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+.day-ev-row:active { filter: brightness(0.97); }
+.day-ev-dot { width: 8px; height: 8px; border-radius: 50%; flex-none; }
+.day-ev-time { font-size: 11px; color: var(--ink-soft); width: 38px; flex-none; font-weight: 600; }
+.day-ev-name { font-size: 14px; font-weight: 600; flex: 1; }
+.day-ev-fixed-tag { font-size: 9px; color: var(--ink-soft); background: var(--bg); border-radius: 4px; padding: 2px 6px; flex-none; }
+.day-empty { text-align: center; padding: 24px; color: var(--ink-faint); font-size: 13px; }
+
+.dot-blue{background:#1B5C9E}.dot-green{background:#257A5C}.dot-red{background:#B8472F}.dot-amber{background:#9A6A0C}
+.dot-purple{background:#5849C4}.dot-teal{background:#0E7C68}.dot-pink{background:#BC3B6B}.dot-gray{background:#5C5C58}
+.row-blue{background:#E3EEFA}.row-green{background:#E5F4EF}.row-red{background:#FBEAE7}.row-amber{background:#FCF0DC}
+.row-purple{background:#ECEAFA}.row-teal{background:#DFF3EF}.row-pink{background:#FBE7EF}.row-gray{background:#EEEEEC}
+
+.fab { position: fixed; right: 18px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: white; border: none; box-shadow: 0 4px 14px rgba(61,170,138,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; }
+.fab:active { background: var(--accent-dark); }
+.fab svg { width: 26px; height: 26px; }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--line); display: flex; z-index: 140; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 0 8px; background: none; border: none; cursor: pointer; color: var(--ink-faint); font-size: 10px; font-weight: 600; }
+.nav-item.active { color: var(--accent); }
+.nav-item svg { width: 21px; height: 21px; }
+
+.page-body { padding-bottom: 80px; }
+.sec { display: none; }
+.sec.active { display: block; }
+
+.sheet-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; align-items: flex-end; justify-content: center; }
+.sheet-bg.show { display: flex; }
+.sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 10px 20px 28px; width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; }
+.sheet-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 14px; }
+.sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+.sheet-close { background: none; border: none; font-size: 22px; color: var(--ink-faint); cursor: pointer; }
+
+.field-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; margin-top: 14px; }
+.field-label:first-of-type { margin-top: 0; }
+input[type="text"], input[type="number"], input[type="time"], input[type="password"], select {
+  width: 100%; height: 46px; border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 0 12px; font-size: 15px; color: var(--ink); background: var(--bg); outline: none; -webkit-appearance: none;
+}
+input:focus, select:focus { border-color: var(--accent); }
+.field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.color-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 6px; margin-top: 4px; }
+.color-dot-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.color-dot-btn.sel { border-color: var(--ink); transform: scale(1.15); }
+
+.sheet-btns { display: flex; gap: 8px; margin-top: 22px; }
+.btn-sheet-del { flex: none; width: 46px; height: 48px; background: #FBEAE7; color: #B8472F; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-sheet-del svg { width: 19px; height: 19px; }
+.btn-sheet-save { flex: 1; height: 48px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn-sheet-save:active { background: var(--accent-dark); }
+
+.seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-top: 14px; }
+.seg-btn { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; background: transparent; color: var(--ink-soft); }
+.seg-btn.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+textarea {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  font-size: 14px; background: var(--bg); resize: vertical; min-height: 90px; line-height: 1.6; outline: none; font-family: inherit;
+}
+textarea:focus { border-color: var(--accent); }
+.hint-sm { font-size: 11px; color: var(--ink-faint); margin-top: 4px; }
+
+.fixed-page { padding: 16px; }
+.fixed-page-title { font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-bottom: 12px; }
+.dow-card { background: var(--surface); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+.dow-card-head { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.dow-card-head.sun { color: var(--sun); }
+.dow-card-head.sat { color: var(--sat); }
+.fixed-item-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.fixed-item-row:last-of-type { border-bottom: none; }
+.fixed-dot { width: 8px; height: 8px; border-radius: 50%; flex-none; }
+.fixed-item-time { font-size: 12px; color: var(--ink-soft); font-weight: 600; width: 42px; flex-none; }
+.fixed-item-text { font-size: 14px; flex: 1; }
+.btn-add-fixed { width: 100%; padding: 10px 0; background: none; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+
+.pdf-page { padding: 16px; }
+.preview-wrap { background: var(--surface); border-radius: 14px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.preview-label { font-size: 11px; color: var(--ink-soft); padding: 8px 14px; border-bottom: 1px solid var(--line); }
+canvas { display: block; width: 100%; }
+.btn-pdf { width: 100%; height: 50px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-pdf:active { background: var(--accent-dark); }
+.btn-pdf:disabled { background: var(--ink-faint); }
+
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #2B2B2B; color: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; z-index: 999; }
+.toast.show { opacity: 1; }
+
+.empty-msg { text-align: center; padding: 28px; color: var(--ink-faint); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="avatar-mini" id="avatar-mini">?</div>
+    <div>
+      <div class="header-name" id="hd-name">読み込み中</div>
+      <div class="header-sub" id="hd-motto"></div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:4px">
+    <button class="btn-logout" id="btn-notify" onclick="toggleNotifications()" style="display:none">🔔 通知オフ</button>
+    <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+  </div>
+</header>
+
+<div class="page-body">
+
+  <div class="sec active" id="sec-calendar">
+    <div class="month-bar">
+      <button class="nav-btn" onclick="changeMonth(-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="month-title"><span class="nen" id="month-nen"></span><span id="month-num"></span></div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="btn-today" onclick="goToday()">今日</button>
+        <button class="nav-btn" onclick="changeMonth(1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="cal-wrap">
+      <div class="cal-dow">
+        <div class="cal-dow-cell sun">日</div><div class="cal-dow-cell">月</div><div class="cal-dow-cell">火</div>
+        <div class="cal-dow-cell">水</div><div class="cal-dow-cell">木</div><div class="cal-dow-cell">金</div><div class="cal-dow-cell sat">土</div>
+      </div>
+      <div class="cal-cells" id="cal-cells"></div>
+    </div>
+
+    <div class="day-list-wrap">
+      <div class="day-list-head">
+        <span class="dnum" id="sel-day-num"></span>
+        <span class="ddow" id="sel-day-dow"></span>
+      </div>
+      <div class="day-list" id="day-list"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="sec-fixed">
+    <div class="fixed-page">
+      <div class="fixed-page-title">曜日ごとの固定スケジュール・タップで編集</div>
+      <div id="fixed-cards"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="sec-pdf">
+    <div class="pdf-page">
+      <div class="month-bar" style="background:none;border:none;padding:0 0 12px">
+        <button class="nav-btn" onclick="changePdfMonth(-1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="month-title" id="pdf-month-title"></div>
+        <button class="nav-btn" onclick="changePdfMonth(1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview-label">プレビュー（A4横型）</div>
+        <canvas id="pdf-canvas"></canvas>
+      </div>
+      <button class="btn-pdf" id="pdf-btn" onclick="dlPDF()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PDFをダウンロード
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab" id="fab-add" onclick="openNewEventSheet()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="goTab('calendar', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    カレンダー
+  </button>
+  <button class="nav-item" onclick="goTab('fixed', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+    固定予定
+  </button>
+  <button class="nav-item" onclick="goTab('pdf', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    PDF出力
+  </button>
+</nav>
+
+<div class="sheet-bg" id="event-sheet-bg">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="event-sheet-title">予定を追加</span>
+      <button class="sheet-close" onclick="closeEventSheet()">✕</button>
+    </div>
+
+    <div class="seg">
+      <button class="seg-btn on" id="seg-single" onclick="setBatchMode(false)">通常入力</button>
+      <button class="seg-btn" id="seg-batch" onclick="setBatchMode(true)">一括テキスト</button>
+    </div>
+
+    <div id="event-form-single">
+      <div class="field-row2">
+        <div>
+          <div class="field-label">年</div>
+          <select id="ev-year"></select>
+        </div>
+        <div>
+          <div class="field-label">月</div>
+          <select id="ev-month"></select>
+        </div>
+      </div>
+      <div class="field-row2">
+        <div>
+          <div class="field-label">開始日</div>
+          <input type="number" id="ev-day" min="1" max="31" placeholder="日">
+        </div>
+        <div>
+          <div class="field-label">終了日（複数日のみ）</div>
+          <input type="number" id="ev-endday" min="1" max="31" placeholder="同じ場合は空欄">
+        </div>
+      </div>
+      <div class="field-row2">
+        <div>
+          <div class="field-label">開始時刻</div>
+          <input type="time" id="ev-ts">
+        </div>
+        <div>
+          <div class="field-label">終了時刻</div>
+          <input type="time" id="ev-te">
+        </div>
+      </div>
+      <div class="field-label">予定名</div>
+      <input type="text" id="ev-text" placeholder="例：会議、通院">
+      <div class="field-label">色</div>
+      <div class="color-grid" id="ev-color-grid"></div>
+      <div class="field-label">🔔 通知（時刻が設定された予定のみ）</div>
+      <select id="ev-reminder">
+        <option value="">通知しない</option>
+        <option value="0">予定の時刻に通知</option>
+        <option value="5">5分前</option>
+        <option value="15">15分前</option>
+        <option value="30">30分前</option>
+        <option value="60">1時間前</option>
+        <option value="1440">前日同時刻</option>
+      </select>
+    </div>
+
+    <div id="event-form-batch" style="display:none">
+      <div class="field-row2">
+        <div>
+          <div class="field-label">年</div>
+          <select id="batch-year"></select>
+        </div>
+        <div>
+          <div class="field-label">月</div>
+          <select id="batch-month"></select>
+        </div>
+      </div>
+      <div class="field-label">予定リスト</div>
+      <textarea id="batch-text" placeholder="例：&#10;1日 9:00-10:00 朝礼&#10;15 ランチ&#10;20-22 出張"></textarea>
+      <p class="hint-sm">形式：「日付 開始時刻-終了時刻 予定名」（時刻は省略可）</p>
+      <div class="field-label">色</div>
+      <div class="color-grid" id="batch-color-grid"></div>
+    </div>
+
+    <div class="sheet-btns">
+      <button class="btn-sheet-del" id="ev-del-btn" style="display:none" onclick="deleteCurrentEvent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+      <button class="btn-sheet-save" id="ev-save-btn" onclick="saveEvent()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="fixed-sheet-bg">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="fixed-sheet-title">固定予定</span>
+      <button class="sheet-close" onclick="closeFixedSheet()">✕</button>
+    </div>
+    <div class="field-label">曜日</div>
+    <input type="text" id="fixed-dow-display" disabled style="background:var(--line);color:var(--ink-soft)">
+    <div class="field-row2">
+      <div>
+        <div class="field-label">開始時刻</div>
+        <input type="time" id="fixed-ts">
+      </div>
+      <div>
+        <div class="field-label">予定名</div>
+        <input type="text" id="fixed-text" placeholder="例：朝礼">
+      </div>
+    </div>
+    <div class="field-label">色</div>
+    <div class="color-grid" id="fixed-color-grid"></div>
+    <div class="sheet-btns">
+      <button class="btn-sheet-del" id="fixed-del-btn" style="display:none" onclick="deleteFixedItem()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+      <button class="btn-sheet-save" onclick="saveFixedItem()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 固定予定「この日だけ」編集シート ═══ -->
+<div class="sheet-bg" id="fixed-exception-sheet-bg">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="fixed-exception-title">この日だけ変更</span>
+      <button class="sheet-close" onclick="closeFixedExceptionSheet()">✕</button>
+    </div>
+    <p class="hint-sm" id="fixed-exception-sub" style="margin-bottom:14px"></p>
+
+    <div class="seg">
+      <button class="seg-btn on" id="fe-seg-modify" onclick="setFixedExceptionMode('modify')">時間・内容を変更</button>
+      <button class="seg-btn" id="fe-seg-skip" onclick="setFixedExceptionMode('skip')">この日は休み</button>
+    </div>
+
+    <div id="fe-modify-form">
+      <div class="field-row2">
+        <div>
+          <div class="field-label">開始時刻</div>
+          <input type="time" id="fe-ts">
+        </div>
+        <div>
+          <div class="field-label">予定名</div>
+          <input type="text" id="fe-text" placeholder="予定名">
+        </div>
+      </div>
+      <div class="field-label">色</div>
+      <div class="color-grid" id="fe-color-grid"></div>
+    </div>
+    <div id="fe-skip-form" style="display:none">
+      <p class="hint-sm" style="margin-top:10px">この日だけ固定予定を表示しないようにします。他の日付には影響しません。</p>
+    </div>
+
+    <div class="sheet-btns">
+      <button class="btn-sheet-del" id="fe-reset-btn" style="display:none" onclick="resetFixedException()" title="元の固定予定に戻す">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+      <button class="btn-sheet-save" onclick="saveFixedException()">この日だけ保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const TOKEN = () => sessionStorage.getItem('cal-token');
+const API = (path, opt) => fetch(path, { ...opt, headers: { 'Content-Type':'application/json', 'x-session-token': TOKEN(), ...(opt?.headers||{}) } });
+
+const DOWS = ['日','月','火','水','木','金','土'];
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const COLORS = [
+  {key:'blue',  hex:'#1B5C9E'}, {key:'green', hex:'#257A5C'}, {key:'red',   hex:'#B8472F'}, {key:'amber', hex:'#9A6A0C'},
+  {key:'purple',hex:'#5849C4'}, {key:'teal',  hex:'#0E7C68'}, {key:'pink',  hex:'#BC3B6B'}, {key:'gray',  hex:'#5C5C58'}
+];
+
+let data = { events: [], fixedSchedules: {}, fixedExceptions: {} };
+let motto = { top: '', bottom: '' };
+const now = new Date();
+let curYear = now.getFullYear();
+let curMonth = now.getMonth() + 1;
+let selectedDay = now.getDate();
+let pdfYear = curYear, pdfMonth = curMonth;
+
+let evSheetColor = 'blue';
+let evSheetEditId = null;
+let evSheetBatch = false;
+
+let fixedSheetDow = null;
+let fixedSheetIdx = null;
+let fixedSheetColor = 'blue';
+
+let feYear = null, feMonth = null, feDay = null, feDow = null, feIdx = null;
+let feColor = 'blue';
+let feMode = 'modify'; // 'modify' | 'skip'
+
+(async function init() {
+  const res = await API('/api/me');
+  if (!res.ok) { location.href = '/login.html'; return; }
+  const me = await res.json();
+  if (me.role === 'admin') { location.href = '/admin.html'; return; }
+  document.getElementById('hd-name').textContent = me.name + ' さん';
+  document.getElementById('avatar-mini').textContent = me.name.charAt(0);
+
+  await loadData();
+  const mr = await API('/api/motto');
+  if (mr.ok) {
+    const md = await mr.json();
+    motto.top = md.mottoTop || ''; motto.bottom = md.mottoBottom || '';
+    document.getElementById('hd-motto').textContent = motto.top || motto.bottom || '';
+  }
+
+  buildSelects();
+  buildColorGrids();
+  renderCalendar();
+  renderPdfPreview();
+  initPushUI();
+})();
+
+async function loadData() {
+  const res = await API('/api/data');
+  if (res.ok) data = await res.json();
+  if (!data.fixedSchedules) data.fixedSchedules = {};
+  if (!data.fixedExceptions) data.fixedExceptions = {};
+}
+
+async function doLogout() {
+  await API('/api/logout', { method: 'POST' });
+  sessionStorage.clear();
+  location.href = '/login.html';
+}
+
+function goTab(name, btn) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('fab-add').style.display = name === 'calendar' ? 'flex' : 'none';
+  if (name === 'fixed') buildFixedCards();
+  if (name === 'pdf') renderPdfPreview();
+}
+
+function buildSelects() {
+  ['ev-year','batch-year'].forEach(id => {
+    const s = document.getElementById(id);
+    for (let y = now.getFullYear()-1; y <= now.getFullYear()+3; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y+'年';
+      s.appendChild(o);
+    }
+  });
+  ['ev-month','batch-month'].forEach(id => {
+    const s = document.getElementById(id);
+    MONTHS.forEach((m,i) => {
+      const o = document.createElement('option');
+      o.value = i+1; o.textContent = m;
+      s.appendChild(o);
+    });
+  });
+}
+
+function buildColorGrids() {
+  ['ev-color-grid','batch-color-grid','fixed-color-grid','fe-color-grid'].forEach(gridId => {
+    const grid = document.getElementById(gridId);
+    grid.innerHTML = COLORS.map(c => `<button type="button" class="color-dot-btn" style="background:${c.hex}" data-color="${c.key}" onclick="pickColor('${gridId}','${c.key}')"></button>`).join('');
+  });
+}
+
+function pickColor(gridId, key) {
+  document.querySelectorAll('#'+gridId+' .color-dot-btn').forEach(b => b.classList.toggle('sel', b.dataset.color === key));
+  if (gridId === 'ev-color-grid' || gridId === 'batch-color-grid') evSheetColor = key;
+  if (gridId === 'fixed-color-grid') fixedSheetColor = key;
+  if (gridId === 'fe-color-grid') feColor = key;
+}
+
+function setColorSelection(gridId, key) {
+  document.querySelectorAll('#'+gridId+' .color-dot-btn').forEach(b => b.classList.toggle('sel', b.dataset.color === key));
+}
+
+function changeMonth(d) {
+  curMonth += d;
+  if (curMonth > 12) { curMonth = 1; curYear++; }
+  if (curMonth < 1)  { curMonth = 12; curYear--; }
+  selectedDay = 1;
+  renderCalendar();
+}
+function goToday() {
+  curYear = now.getFullYear(); curMonth = now.getMonth()+1; selectedDay = now.getDate();
+  renderCalendar();
+}
+
+function dateKeyOf(year, month, day) {
+  return year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+}
+
+function getEventsForDay(year, month, day) {
+  const ym = year + '-' + String(month).padStart(2,'0');
+  const individual = data.events.filter(e => e.date === ym && day >= e.day && day <= (e.endDay || e.day));
+  const dow = new Date(year, month-1, day).getDay();
+  const dateKey = dateKeyOf(year, month, day);
+  const exceptionsForDate = (data.fixedExceptions && data.fixedExceptions[dateKey]) || {};
+
+  const fixed = (data.fixedSchedules[dow] || [])
+    .map((s, idx) => {
+      const exKey = dow + '-' + idx;
+      const ex = exceptionsForDate[exKey];
+      if (ex && ex.type === 'skip') return null; // この日は休み
+      if (ex && ex.type === 'modify') {
+        return { ts: ex.ts, text: ex.text, color: ex.color || s.color || 'blue', fixed: true, dow, idx, modified: true };
+      }
+      return { ...s, fixed: true, dow, idx, color: s.color || 'blue' };
+    })
+    .filter(s => s && s.text);
+
+  return [...fixed, ...individual];
+}
+
+function renderCalendar() {
+  const year = curYear, month = curMonth;
+  document.getElementById('month-nen').textContent = year + '年';
+  document.getElementById('month-num').textContent = MONTHS[month-1];
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDow = new Date(year, month-1, 1).getDay();
+  const today = now;
+  const cells = document.getElementById('cal-cells');
+  cells.innerHTML = '';
+
+  const prevDays = new Date(year, month-1, 0).getDate();
+  for (let i = firstDow - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell other-month';
+    cell.innerHTML = `<div class="day-num">${prevDays-i}</div>`;
+    cells.appendChild(cell);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = (d === today.getDate() && month === today.getMonth()+1 && year === today.getFullYear());
+    const isSelected = (d === selectedDay);
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isToday ? ' today' : '');
+    if (isSelected) cell.style.background = 'var(--accent-light)';
+    cell.onclick = () => { selectedDay = d; renderCalendar(); };
+    let html = `<div class="day-num">${d}</div>`;
+    const evts = getEventsForDay(year, month, d);
+    const maxShow = 3;
+    evts.slice(0, maxShow).forEach(ev => {
+      html += `<div class="ev-chip ev-${ev.color||'blue'}">${(ev.ts?ev.ts+' ':'')}${ev.text}</div>`;
+    });
+    if (evts.length > maxShow) html += `<div class="ev-more">+${evts.length-maxShow}</div>`;
+    cell.innerHTML = html;
+    cells.appendChild(cell);
+  }
+
+  const total = firstDow + daysInMonth;
+  const remain = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remain; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell other-month';
+    cell.innerHTML = `<div class="day-num">${i}</div>`;
+    cells.appendChild(cell);
+  }
+
+  renderDayList();
+}
+
+function renderDayList() {
+  const year = curYear, month = curMonth, day = selectedDay;
+  const dow = new Date(year, month-1, day).getDay();
+  document.getElementById('sel-day-num').textContent = day;
+  document.getElementById('sel-day-dow').textContent = DOWS[dow] + '曜日';
+
+  const evts = getEventsForDay(year, month, day);
+  const el = document.getElementById('day-list');
+  if (!evts.length) { el.innerHTML = '<div class="day-empty">予定はありません</div>'; return; }
+
+  el.innerHTML = evts.map(ev => {
+    const colorKey = ev.color || 'blue';
+    if (ev.fixed) {
+      const modTag = ev.modified ? '変更済み' : '固定';
+      return `<div class="day-ev-row row-${colorKey}" onclick="openFixedExceptionSheet(${year},${month},${day},${ev.dow},${ev.idx})">
+        <div class="day-ev-dot dot-${colorKey}"></div>
+        <div class="day-ev-time">${ev.ts||''}</div>
+        <div class="day-ev-name">${ev.text}</div>
+        <div class="day-ev-fixed-tag">${modTag}</div>
+      </div>`;
+    } else {
+      const bellTag = (ev.reminderMinutes !== null && ev.reminderMinutes !== undefined) ? '🔔' : '';
+      return `<div class="day-ev-row row-${colorKey}" onclick="openEditEventSheet(${ev.id})">
+        <div class="day-ev-dot dot-${colorKey}"></div>
+        <div class="day-ev-time">${ev.ts||''}</div>
+        <div class="day-ev-name">${bellTag} ${ev.text}${ev.endDay!==ev.day?'（〜'+ev.endDay+'日）':''}</div>
+      </div>`;
+    }
+  }).join('');
+}
+
+function setBatchMode(isBatch) {
+  evSheetBatch = isBatch;
+  document.getElementById('seg-single').classList.toggle('on', !isBatch);
+  document.getElementById('seg-batch').classList.toggle('on', isBatch);
+  document.getElementById('event-form-single').style.display = isBatch ? 'none' : '';
+  document.getElementById('event-form-batch').style.display = isBatch ? '' : 'none';
+  document.getElementById('ev-save-btn').textContent = isBatch ? '読み込む' : (evSheetEditId ? '更新する' : '追加する');
+}
+
+function openNewEventSheet() {
+  evSheetEditId = null;
+  evSheetBatch = false;
+  document.getElementById('event-sheet-title').textContent = '予定を追加';
+  document.getElementById('ev-del-btn').style.display = 'none';
+  document.getElementById('ev-save-btn').textContent = '追加する';
+  document.getElementById('seg-single').style.display = '';
+  document.getElementById('seg-batch').style.display = '';
+  setBatchMode(false);
+
+  document.getElementById('ev-year').value = curYear;
+  document.getElementById('ev-month').value = curMonth;
+  document.getElementById('ev-day').value = selectedDay;
+  document.getElementById('ev-endday').value = '';
+  document.getElementById('ev-ts').value = '';
+  document.getElementById('ev-te').value = '';
+  document.getElementById('ev-text').value = '';
+  document.getElementById('ev-reminder').value = '';
+  document.getElementById('batch-year').value = curYear;
+  document.getElementById('batch-month').value = curMonth;
+  document.getElementById('batch-text').value = '';
+  evSheetColor = 'blue';
+  setColorSelection('ev-color-grid', 'blue');
+  setColorSelection('batch-color-grid', 'blue');
+
+  document.getElementById('event-sheet-bg').classList.add('show');
+}
+
+function openEditEventSheet(id) {
+  const ev = data.events.find(e => e.id === id);
+  if (!ev) return;
+  evSheetEditId = id;
+  evSheetBatch = false;
+  document.getElementById('event-sheet-title').textContent = '予定を編集';
+  document.getElementById('ev-del-btn').style.display = 'flex';
+  document.getElementById('seg-single').style.display = 'none';
+  document.getElementById('seg-batch').style.display = 'none';
+  setBatchMode(false);
+  document.getElementById('ev-save-btn').textContent = '更新する';
+
+  const [y, m] = ev.date.split('-');
+  document.getElementById('ev-year').value = parseInt(y);
+  document.getElementById('ev-month').value = parseInt(m);
+  document.getElementById('ev-day').value = ev.day;
+  document.getElementById('ev-endday').value = ev.endDay !== ev.day ? ev.endDay : '';
+  document.getElementById('ev-ts').value = ev.ts || '';
+  document.getElementById('ev-te').value = ev.te || '';
+  document.getElementById('ev-text').value = ev.text;
+  document.getElementById('ev-reminder').value = (ev.reminderMinutes === null || ev.reminderMinutes === undefined) ? '' : String(ev.reminderMinutes);
+  evSheetColor = ev.color || 'blue';
+  setColorSelection('ev-color-grid', evSheetColor);
+
+  document.getElementById('event-sheet-bg').classList.add('show');
+}
+
+function closeEventSheet() { document.getElementById('event-sheet-bg').classList.remove('show'); }
+
+async function saveEvent() {
+  if (evSheetBatch) {
+    const year = document.getElementById('batch-year').value;
+    const month = String(document.getElementById('batch-month').value).padStart(2,'0');
+    const lines = document.getElementById('batch-text').value.split('\n');
+    let count = 0;
+    for (const line of lines) {
+      const l = line.trim(); if (!l) continue;
+      const m = l.match(/^(\d+)(?:日)?(?:-(\d+)日?)?\s+(?:(\d{1,2}:\d{2})(?:-(\d{1,2}:\d{2}))?\s+)?(.+)/);
+      if (m) {
+        await API('/api/event', { method:'POST', body: JSON.stringify({ date: year+'-'+month, day: parseInt(m[1]), endDay: m[2]?parseInt(m[2]):parseInt(m[1]), ts: m[3]||'', te: m[4]||'', text: m[5].trim(), color: evSheetColor }) });
+        count++;
+      }
+    }
+    await loadData();
+    closeEventSheet();
+    renderCalendar();
+    showToast(count + '件を読み込みました ✓');
+    return;
+  }
+
+  const year = document.getElementById('ev-year').value;
+  const month = String(document.getElementById('ev-month').value).padStart(2,'0');
+  const day = document.getElementById('ev-day').value;
+  const endDay = document.getElementById('ev-endday').value || day;
+  const ts = document.getElementById('ev-ts').value;
+  const te = document.getElementById('ev-te').value;
+  const text = document.getElementById('ev-text').value.trim();
+  const reminderMinutes = document.getElementById('ev-reminder').value;
+  if (!day || !text) { showToast('日付と予定名を入力してください'); return; }
+
+  if (evSheetEditId) {
+    await API('/api/event/'+evSheetEditId, { method: 'DELETE' });
+  }
+  await API('/api/event', { method:'POST', body: JSON.stringify({ date: year+'-'+month, day, endDay, ts, te, text, color: evSheetColor, reminderMinutes }) });
+  await loadData();
+  closeEventSheet();
+  renderCalendar();
+  showToast(evSheetEditId ? '予定を更新しました ✓' : '予定を追加しました ✓');
+}
+
+async function deleteCurrentEvent() {
+  if (!evSheetEditId) return;
+  if (!confirm('この予定を削除しますか？')) return;
+  await API('/api/event/'+evSheetEditId, { method: 'DELETE' });
+  await loadData();
+  closeEventSheet();
+  renderCalendar();
+  showToast('削除しました');
+}
+
+function buildFixedCards() {
+  const wrap = document.getElementById('fixed-cards');
+  wrap.innerHTML = '';
+  [1,2,3,4,5,6,0].forEach(dow => {
+    const items = data.fixedSchedules[dow] || [];
+    const labelClass = dow===0?'sun':dow===6?'sat':'';
+    const card = document.createElement('div');
+    card.className = 'dow-card';
+    let itemsHtml = items.map((it,i) => {
+      const c = it.color || 'blue';
+      return `<div class="fixed-item-row" onclick="openFixedSheetFor(${dow},${i})">
+        <div class="fixed-dot dot-${c}"></div>
+        <div class="fixed-item-time">${it.ts||''}</div>
+        <div class="fixed-item-text">${it.text||'(未設定)'}</div>
+      </div>`;
+    }).join('');
+    card.innerHTML = `<div class="dow-card-head ${labelClass}">${DOWS[dow]}曜日</div>${itemsHtml}<button class="btn-add-fixed" onclick="openFixedSheetFor(${dow},null)">＋ 予定を追加</button>`;
+    wrap.appendChild(card);
+  });
+}
+
+function openFixedSheetFor(dow, idx) {
+  fixedSheetDow = dow;
+  fixedSheetIdx = idx;
+  const isNew = (idx === null);
+  document.getElementById('fixed-sheet-title').textContent = isNew ? '固定予定を追加' : '固定予定を編集';
+  document.getElementById('fixed-dow-display').value = DOWS[dow] + '曜日';
+  document.getElementById('fixed-del-btn').style.display = isNew ? 'none' : 'flex';
+
+  if (isNew) {
+    document.getElementById('fixed-ts').value = '';
+    document.getElementById('fixed-text').value = '';
+    fixedSheetColor = 'blue';
+  } else {
+    const it = data.fixedSchedules[dow][idx];
+    document.getElementById('fixed-ts').value = it.ts || '';
+    document.getElementById('fixed-text').value = it.text || '';
+    fixedSheetColor = it.color || 'blue';
+  }
+  setColorSelection('fixed-color-grid', fixedSheetColor);
+  document.getElementById('fixed-sheet-bg').classList.add('show');
+}
+
+function closeFixedSheet() { document.getElementById('fixed-sheet-bg').classList.remove('show'); }
+
+async function saveFixedItem() {
+  const ts = document.getElementById('fixed-ts').value;
+  const text = document.getElementById('fixed-text').value.trim();
+  if (!text) { showToast('予定名を入力してください'); return; }
+
+  if (!data.fixedSchedules[fixedSheetDow]) data.fixedSchedules[fixedSheetDow] = [];
+  const item = { ts, text, color: fixedSheetColor };
+
+  if (fixedSheetIdx === null) {
+    data.fixedSchedules[fixedSheetDow].push(item);
+  } else {
+    data.fixedSchedules[fixedSheetDow][fixedSheetIdx] = item;
+  }
+
+  const res = await API('/api/fixed', { method:'POST', body: JSON.stringify({ fixedSchedules: data.fixedSchedules }) });
+  if (res.ok) {
+    await loadData();
+    closeFixedSheet();
+    buildFixedCards();
+    renderCalendar();
+    showToast('固定予定を保存しました ✓');
+  } else showToast('エラーが発生しました');
+}
+
+async function deleteFixedItem() {
+  if (fixedSheetIdx === null) return;
+  if (!confirm('この固定予定を削除しますか？')) return;
+  data.fixedSchedules[fixedSheetDow].splice(fixedSheetIdx, 1);
+  const res = await API('/api/fixed', { method:'POST', body: JSON.stringify({ fixedSchedules: data.fixedSchedules }) });
+  if (res.ok) {
+    await loadData();
+    closeFixedSheet();
+    buildFixedCards();
+    renderCalendar();
+    showToast('削除しました');
+  }
+}
+
+// ── 固定予定「この日だけ」変更シート ────────────
+function openFixedExceptionSheet(year, month, day, dow, idx) {
+  feYear = year; feMonth = month; feDay = day; feDow = dow; feIdx = idx;
+  const dateKey = dateKeyOf(year, month, day);
+  const exKey = dow + '-' + idx;
+  const existing = (data.fixedExceptions[dateKey] && data.fixedExceptions[dateKey][exKey]) || null;
+  const original = data.fixedSchedules[dow][idx];
+
+  document.getElementById('fixed-exception-title').textContent = '「' + original.text + '」をこの日だけ変更';
+  document.getElementById('fixed-exception-sub').textContent = year + '年' + month + '月' + day + '日（' + DOWS[dow] + '）のみに適用されます';
+  document.getElementById('fe-reset-btn').style.display = existing ? 'flex' : 'none';
+
+  if (existing && existing.type === 'skip') {
+    setFixedExceptionMode('skip');
+  } else {
+    setFixedExceptionMode('modify');
+    document.getElementById('fe-ts').value = existing ? (existing.ts || '') : (original.ts || '');
+    document.getElementById('fe-text').value = existing ? existing.text : original.text;
+    feColor = existing ? (existing.color || original.color || 'blue') : (original.color || 'blue');
+    setColorSelection('fe-color-grid', feColor);
+  }
+
+  document.getElementById('fixed-exception-sheet-bg').classList.add('show');
+}
+
+function setFixedExceptionMode(mode) {
+  feMode = mode;
+  document.getElementById('fe-seg-modify').classList.toggle('on', mode === 'modify');
+  document.getElementById('fe-seg-skip').classList.toggle('on', mode === 'skip');
+  document.getElementById('fe-modify-form').style.display = mode === 'modify' ? '' : 'none';
+  document.getElementById('fe-skip-form').style.display = mode === 'skip' ? '' : 'none';
+}
+
+function closeFixedExceptionSheet() { document.getElementById('fixed-exception-sheet-bg').classList.remove('show'); }
+
+async function saveFixedException() {
+  const dateKey = dateKeyOf(feYear, feMonth, feDay);
+  const exKey = feDow + '-' + feIdx;
+  let exception;
+
+  if (feMode === 'skip') {
+    exception = { type: 'skip' };
+  } else {
+    const ts = document.getElementById('fe-ts').value;
+    const text = document.getElementById('fe-text').value.trim();
+    if (!text) { showToast('予定名を入力してください'); return; }
+    exception = { type: 'modify', ts, text, color: feColor };
+  }
+
+  const res = await API('/api/fixed-exception', { method: 'POST', body: JSON.stringify({ dateKey, dowIdxKey: exKey, exception }) });
+  if (res.ok) {
+    await loadData();
+    closeFixedExceptionSheet();
+    renderCalendar();
+    showToast('この日だけの変更を保存しました ✓');
+  } else showToast('エラーが発生しました');
+}
+
+async function resetFixedException() {
+  if (!confirm('この日の変更を取り消して、元の固定予定に戻しますか？')) return;
+  const dateKey = dateKeyOf(feYear, feMonth, feDay);
+  const exKey = feDow + '-' + feIdx;
+  const res = await API('/api/fixed-exception', { method: 'POST', body: JSON.stringify({ dateKey, dowIdxKey: exKey, exception: null }) });
+  if (res.ok) {
+    await loadData();
+    closeFixedExceptionSheet();
+    renderCalendar();
+    showToast('元の固定予定に戻しました');
+  }
+}
+
+function changePdfMonth(d) {
+  pdfMonth += d;
+  if (pdfMonth > 12) { pdfMonth = 1; pdfYear++; }
+  if (pdfMonth < 1)  { pdfMonth = 12; pdfYear--; }
+  renderPdfPreview();
+}
+
+function renderPdfPreview() {
+  document.getElementById('pdf-month-title').textContent = pdfYear+'年'+MONTHS[pdfMonth-1];
+  drawCalendar(document.getElementById('pdf-canvas'), 794, 560, pdfYear, pdfMonth);
+}
+
+function drawCalendar(canvas, W, H, year, month) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const hasTop = !!(motto.top);
+  const hasBottom = !!(motto.bottom);
+  const MOTTO_H = H * 0.055;
+  const offsetTop = hasTop ? MOTTO_H : 0;
+  const offsetBottom = hasBottom ? MOTTO_H : 0;
+
+  const PAD = W * 0.022;
+  const HDR = H * 0.082;
+  const DOW_H = H * 0.05;
+  const gridY = offsetTop + HDR + DOW_H;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDow = new Date(year, month-1, 1).getDay();
+  const rows = Math.ceil((firstDow + daysInMonth) / 7);
+  const colW = (W - PAD*2) / 7;
+  const rowH = (H - gridY - PAD - offsetBottom) / rows;
+  const today = now;
+
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+  if (hasTop) {
+    ctx.fillStyle = '#E5F4EF';
+    ctx.fillRect(0, 0, W, MOTTO_H);
+    ctx.fillStyle = '#257A5C';
+    ctx.font = `700 ${MOTTO_H * 0.48}px -apple-system,sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(motto.top, W/2, MOTTO_H / 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  ctx.fillStyle = '#3DAA8A'; ctx.fillRect(0, offsetTop, W, HDR);
+
+  const userName = sessionStorage.getItem('cal-name') || '';
+  if (userName) {
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = `500 ${H*0.026}px -apple-system,sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(userName, PAD + 4, offsetTop + HDR*0.52);
+  }
+
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${H*0.038}px -apple-system,sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(year+'年 '+MONTHS[month-1], W/2, offsetTop + HDR*0.68);
+
+  DOWS.forEach((d, i) => {
+    ctx.fillStyle = i===0?'#E2685A':i===6?'#4A90C9':'#888780';
+    ctx.font = `700 ${H*0.026}px -apple-system,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d, PAD + colW*i + colW/2, offsetTop + HDR + DOW_H*0.74);
+  });
+
+  for (let cell = 0; cell < rows*7; cell++) {
+    const day = cell - firstDow + 1;
+    const col = cell%7, row = Math.floor(cell/7);
+    const x = PAD + col*colW, y = gridY + row*rowH;
+    ctx.strokeStyle = '#ECECEC'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, colW, rowH);
+
+    if (day < 1 || day > daysInMonth) {
+      ctx.fillStyle = '#FAFAFA'; ctx.fillRect(x+0.5, y+0.5, colW-1, rowH-1);
+      continue;
+    }
+
+    const isToday = (day===today.getDate() && month===today.getMonth()+1 && year===today.getFullYear());
+    if (isToday) { ctx.fillStyle = '#E5F4EF'; ctx.fillRect(x+0.5, y+0.5, colW-1, rowH-1); }
+
+    const numColor = col===0?'#E2685A':col===6?'#4A90C9':'#2B2B2B';
+    if (isToday) {
+      ctx.fillStyle = '#3DAA8A';
+      ctx.beginPath(); ctx.arc(x+colW*0.12, y+rowH*0.15, rowH*0.13, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+    } else { ctx.fillStyle = numColor; }
+    ctx.font = `700 ${rowH*0.19}px -apple-system,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(String(day), x+colW*0.12, y+rowH*0.22);
+
+    const evts = getEventsForDay(year, month, day);
+    const lineH = rowH * 0.155;
+    const maxE = Math.max(1, Math.floor((rowH*0.72)/(lineH+2)));
+    const colorMap = { blue:'#E3EEFA', green:'#E5F4EF', red:'#FBEAE7', amber:'#FCF0DC', purple:'#ECEAFA', teal:'#DFF3EF', pink:'#FBE7EF', gray:'#EEEEEC' };
+    const fgMap    = { blue:'#1B5C9E', green:'#257A5C', red:'#B8472F', amber:'#9A6A0C', purple:'#5849C4', teal:'#0E7C68', pink:'#BC3B6B', gray:'#5C5C58' };
+
+    evts.slice(0, maxE).forEach((ev, ei) => {
+      const ey = y + rowH*0.26 + ei*(lineH+2);
+      const ew = colW*0.88, ex = x+colW*0.06;
+      ctx.fillStyle = colorMap[ev.color||'blue'] || '#E3EEFA';
+      if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(ex,ey,ew,lineH,2); ctx.fill(); }
+      else { ctx.fillRect(ex,ey,ew,lineH); }
+      ctx.fillStyle = fgMap[ev.color||'blue'] || '#1B5C9E';
+      ctx.font = `600 ${lineH*0.58}px -apple-system,sans-serif`;
+      ctx.textAlign = 'left';
+      let label = (ev.ts ? ev.ts+' ' : '') + ev.text;
+      while (ctx.measureText(label).width > ew-5 && label.length>1) label=label.slice(0,-1);
+      if (label!==((ev.ts?ev.ts+' ':'')+ev.text)) label=label.slice(0,-1)+'…';
+      ctx.fillText(label, ex+3, ey+lineH*0.76);
+    });
+    if (evts.length > maxE) {
+      ctx.fillStyle = '#B3B3B3'; ctx.font = `400 ${rowH*0.11}px sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(`+${evts.length-maxE}`, x+colW-colW*0.04, y+rowH-rowH*0.04);
+    }
+  }
+
+  ctx.strokeStyle = '#ECECEC'; ctx.lineWidth = 1;
+  ctx.strokeRect(PAD, gridY, colW*7, rowH*rows);
+
+  if (hasBottom) {
+    const by = H - offsetBottom;
+    ctx.fillStyle = '#E5F4EF';
+    ctx.fillRect(0, by, W, MOTTO_H);
+    ctx.fillStyle = '#257A5C';
+    ctx.font = `700 ${MOTTO_H * 0.48}px -apple-system,sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(motto.bottom, W/2, by + MOTTO_H / 2);
+    ctx.textBaseline = 'alphabetic';
+  }
+}
+
+async function dlPDF() {
+  const btn = document.getElementById('pdf-btn');
+  btn.disabled = true; btn.textContent = '生成中...';
+  await new Promise(r => setTimeout(r, 50));
+  const W = 1123, H = 794;
+  const c = document.createElement('canvas');
+  drawCalendar(c, W, H, pdfYear, pdfMonth);
+  if (window.jspdf) {
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({orientation:'landscape',unit:'px',format:[W,H]});
+    pdf.addImage(c.toDataURL('image/png'),'PNG',0,0,W,H);
+    pdf.save(`calendar_${pdfYear}_${String(pdfMonth).padStart(2,'0')}.pdf`);
+  } else {
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = `calendar_${pdfYear}_${String(pdfMonth).padStart(2,'0')}.png`;
+    a.click();
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDFをダウンロード';
+  showToast('PDFを保存しました ✓');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── プッシュ通知 ──────────────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function initPushUI() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return; // 非対応ブラウザ
+  const btn = document.getElementById('btn-notify');
+  btn.style.display = '';
+
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const existingSub = await reg.pushManager.getSubscription();
+    updateNotifyButton(!!existingSub);
+  } catch (e) {
+    btn.style.display = 'none';
+  }
+}
+
+function updateNotifyButton(isOn) {
+  const btn = document.getElementById('btn-notify');
+  btn.textContent = isOn ? '🔔 通知オン' : '🔕 通知オフ';
+  btn.style.opacity = isOn ? '1' : '0.6';
+}
+
+async function toggleNotifications() {
+  const reg = await navigator.serviceWorker.ready;
+  const existingSub = await reg.pushManager.getSubscription();
+
+  if (existingSub) {
+    // 通知をオフにする
+    await API('/api/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint: existingSub.endpoint }) });
+    await existingSub.unsubscribe();
+    updateNotifyButton(false);
+    showToast('通知をオフにしました');
+    return;
+  }
+
+  // 通知をオンにする
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') { showToast('通知が許可されませんでした'); return; }
+
+  const keyRes = await API('/api/push/vapid-public-key');
+  const { publicKey } = await keyRes.json();
+
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey)
+  });
+
+  await API('/api/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub }) });
+  updateNotifyButton(true);
+  showToast('通知をオンにしました ✓');
+}
+
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);
+    this.arcTo(x+w,y,x+w,y+r,r);this.lineTo(x+w,y+h-r);
+    this.arcTo(x+w,y+h,x+w-r,y+h,r);this.lineTo(x+r,y+h);
+    this.arcTo(x,y+h,x,y+h-r,r);this.lineTo(x,y+r);
+    this.arcTo(x,y,x+r,y,r);this.closePath();
+  };
+}
+</script>
+</body>
+</html>
