@@ -1064,9 +1064,9 @@ function drawCalendar(canvas, W, H, year, month) {
     const evts = [...indivEvts, ...fixedEvts];
 
     // 予定チップ：下から積み上げ（2行対応）
-    const lineH = rowH * 0.178;
-    const chipGap = 2;
-    const numAreaH = rowH * 0.28;
+    const lineH = rowH * 0.13;
+    const chipGap = 1.5;
+    const numAreaH = rowH * 0.26;
     const availH = rowH - numAreaH - chipGap;
     const maxE = Math.max(1, Math.floor(availH / (lineH + chipGap)));
     const showEvts = evts.slice(0, maxE);
