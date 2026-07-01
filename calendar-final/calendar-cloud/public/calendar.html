@@ -977,33 +977,34 @@ function drawCalendar(canvas, W, H, year, month) {
   const userName = sessionStorage.getItem('cal-name') || '';
   if (userName) {
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = `600 ${H*0.03}px -apple-system,sans-serif`;
+    ctx.font = `600 ${H*0.033}px -apple-system,sans-serif`;
     ctx.textAlign = 'left';
     ctx.fillText(userName, PAD + 6, offsetTop + HDR*0.55);
   }
-  ctx.fillStyle = '#fff'; ctx.font = `700 ${H*0.044}px -apple-system,sans-serif`;
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${H*0.05}px -apple-system,sans-serif`;
   ctx.textAlign = 'center';
-  ctx.fillText(year+'年 '+MONTHS[month-1], W/2, offsetTop + HDR*0.72);
+  ctx.fillText(year+'年 '+MONTHS[month-1], W/2, offsetTop + HDR*0.75);
 
   // 曜日ヘッダー
   DOWS.forEach((d, i) => {
-    ctx.fillStyle = i===0?'#E2685A':i===6?'#4A90C9':'#555';
-    ctx.font = `700 ${H*0.03}px -apple-system,sans-serif`;
+    ctx.fillStyle = i===0?'#E2685A':i===6?'#4A90C9':'#444';
+    ctx.font = `700 ${H*0.033}px -apple-system,sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(d, PAD + colW*i + colW/2, offsetTop + HDR + DOW_H*0.76);
+    ctx.fillText(d, PAD + colW*i + colW/2, offsetTop + HDR + DOW_H*0.78);
   });
 
   // セル描画（テキスト2行対応・下から積み上げ）
   const colorMap = { blue:'#E3EEFA', green:'#E5F4EF', red:'#FBEAE7', amber:'#FCF0DC', purple:'#ECEAFA', teal:'#DFF3EF', pink:'#FBE7EF', gray:'#EEEEEC' };
   const fgMap    = { blue:'#1B5C9E', green:'#257A5C', red:'#B8472F', amber:'#9A6A0C', purple:'#5849C4', teal:'#0E7C68', pink:'#BC3B6B', gray:'#5C5C58' };
 
-  // ── 補助関数：テキストを折り返して最大2行で描画 ──
-  function drawWrappedText(ctx, text, x, y, maxW, lineH, color) {
+  // ── 補助関数：テキストを折り返して最大2行で描画（x=中央座標） ──
+  function drawWrappedText(ctx, text, cx, y, maxW, lineH, color) {
     ctx.fillStyle = color;
+    ctx.textAlign = 'center';
     // 1行に収まるか
     if (ctx.measureText(text).width <= maxW) {
-      ctx.fillText(text, x, y);
-      return lineH; // 使用した高さ
+      ctx.fillText(text, cx, y);
+      return lineH;
     }
     // 2行に分割
     let line1 = '';
@@ -1020,9 +1021,9 @@ function drawCalendar(canvas, W, H, year, month) {
       }
       line2 += line2raw[i];
     }
-    ctx.fillText(line1, x, y);
-    ctx.fillText(line2, x, y + lineH * 0.9);
-    return lineH * 1.9; // 2行分の高さ
+    ctx.fillText(line1, cx, y);
+    ctx.fillText(line2, cx, y + lineH * 0.9);
+    return lineH * 1.9;
   }
 
   for (let cell = 0; cell < rows*7; cell++) {
@@ -1046,59 +1047,60 @@ function drawCalendar(canvas, W, H, year, month) {
     const numColor = col===0?'#E2685A':col===6?'#4A90C9':'#2B2B2B';
     if (isToday) {
       ctx.fillStyle = '#3DAA8A';
-      ctx.beginPath(); ctx.arc(x+colW*0.13, y+rowH*0.14, rowH*0.115, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+colW*0.5, y+rowH*0.14, rowH*0.125, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = '#fff';
     } else { ctx.fillStyle = numColor; }
-    ctx.font = `700 ${rowH*0.18}px -apple-system,sans-serif`;
+    ctx.font = `700 ${rowH*0.22}px -apple-system,sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(String(day), x+colW*0.13, y+rowH*0.2);
+    ctx.fillText(String(day), x+colW*0.5, y+rowH*0.22);
 
-    // 予定取得：固定を先に、次に個別、時系列ソート
+    // 予定取得：
+    // 積み上げ順 → 一番下：固定予定（時系列）→ その上：個別予定（時系列）
     const rawEvts = getEventsForDay(year, month, day);
     const fixedEvts = rawEvts.filter(e => e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
     const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
-    const evts = [...fixedEvts, ...indivEvts];
+    // 描画順：下から → 固定（一番下）、個別（その上）
+    // 表示上は上から読みやすい順に見えるよう、個別を先に（上段）、固定を後に（下段）並べる
+    const evts = [...indivEvts, ...fixedEvts];
 
     // 予定チップ：下から積み上げ（2行対応）
-    const lineH = rowH * 0.165;
+    const lineH = rowH * 0.178;
     const chipGap = 2;
-    const numAreaH = rowH * 0.27; // 日付番号エリア
+    const numAreaH = rowH * 0.28;
     const availH = rowH - numAreaH - chipGap;
-
-    // まず何件入るか計算（2行チップも考慮して単純に1行として計算）
     const maxE = Math.max(1, Math.floor(availH / (lineH + chipGap)));
     const showEvts = evts.slice(0, maxE);
     const moreCount = evts.length - showEvts.length;
 
-    // 下から積み上げ：最下段から描画
+    // 下から積み上げ：最下段から描画（配列を逆順に）
     let curY = y + rowH - chipGap;
     const chipsToRender = [...showEvts].reverse();
     chipsToRender.forEach((ev) => {
       const ew = colW * 0.9;
       const ex = x + colW * 0.05;
-      const textFs = lineH * 0.56;
+      const textFs = lineH * 0.58;
       ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
 
-      // テキスト内容
       const label = (ev.ts ? ev.ts+' ' : '') + ev.text;
       const needsWrap = ctx.measureText(label).width > ew - 6;
       const chipH = needsWrap ? lineH * 1.95 : lineH;
-
       const ey = curY - chipH;
+
       ctx.fillStyle = colorMap[ev.color||'blue'] || '#E3EEFA';
       if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(ex, ey, ew, chipH, 2); ctx.fill(); }
       else { ctx.fillRect(ex, ey, ew, chipH); }
 
       ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
-      drawWrappedText(ctx, label, ex+3, ey + lineH*0.72, ew-6, lineH*0.9, fgMap[ev.color||'blue'] || '#1B5C9E');
+      ctx.textAlign = 'center';
+      drawWrappedText(ctx, label, ex + ew/2, ey + lineH*0.72, ew-6, lineH*0.9, fgMap[ev.color||'blue'] || '#1B5C9E');
 
       curY = ey - chipGap;
     });
 
     if (moreCount > 0) {
-      ctx.fillStyle = '#999'; ctx.font = `400 ${rowH*0.115}px sans-serif`;
-      ctx.textAlign = 'right';
-      ctx.fillText(`+${moreCount}`, x+colW-colW*0.04, y+rowH*0.22);
+      ctx.fillStyle = '#999'; ctx.font = `500 ${rowH*0.13}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`+${moreCount}件`, x+colW*0.5, y+rowH*0.24);
     }
   }
 
