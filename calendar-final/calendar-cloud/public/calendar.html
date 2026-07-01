@@ -56,17 +56,18 @@ body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; backgr
 
 .ev-chip { font-size: 9px; font-weight: 600; border-radius: 4px; padding: 1.5px 4px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.5; cursor: pointer; }
 .ev-more { font-size: 9px; color: var(--ink-faint); padding: 0 2px; text-align: center; }
-.ev-blue   { background: #1565C0; color: #fff; }
-.ev-red    { background: #C62828; color: #fff; }
-.ev-yellow { background: #F9A825; color: #333; }
-.ev-orange { background: #E65100; color: #fff; }
-.ev-green  { background: #2E7D32; color: #fff; }
-.ev-pink   { background: #AD1457; color: #fff; }
+.ev-blue   { background: #BDD7EE; color: #1a1a1a; }
+.ev-red    { background: #F4CCCC; color: #1a1a1a; }
+.ev-yellow { background: #FFF2CC; color: #1a1a1a; }
+.ev-orange { background: #FCE5CD; color: #1a1a1a; }
+.ev-green  { background: #D9EAD3; color: #1a1a1a; }
+.ev-pink   { background: #F4C2C2; color: #1a1a1a; }
+.ev-white  { background: #FFFFFF; color: #1a1a1a; border: 1px solid #ccc; }
 /* 旧色の後方互換 */
-.ev-amber  { background: #F9A825; color: #333; }
-.ev-purple { background: #1565C0; color: #fff; }
-.ev-teal   { background: #2E7D32; color: #fff; }
-.ev-gray   { background: #555; color: #fff; }
+.ev-amber  { background: #FFF2CC; color: #1a1a1a; }
+.ev-purple { background: #BDD7EE; color: #1a1a1a; }
+.ev-teal   { background: #D9EAD3; color: #1a1a1a; }
+.ev-gray   { background: #E8E8E8; color: #1a1a1a; }
 
 .day-list-wrap { background: var(--surface); margin-top: 8px; }
 .day-list-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 16px 8px; }
@@ -81,12 +82,12 @@ body { font-family: -apple-system, 'Hiragino Sans', 'Meiryo', sans-serif; backgr
 .day-ev-fixed-tag { font-size: 9px; color: var(--ink-soft); background: var(--bg); border-radius: 4px; padding: 2px 6px; flex-none; }
 .day-empty { text-align: center; padding: 24px; color: var(--ink-faint); font-size: 13px; }
 
-.dot-blue{background:#1565C0}.dot-green{background:#2E7D32}.dot-red{background:#C62828}.dot-amber{background:#F9A825}
-.dot-purple{background:#1565C0}.dot-teal{background:#2E7D32}.dot-pink{background:#AD1457}.dot-gray{background:#555}
-.dot-yellow{background:#F9A825}.dot-orange{background:#E65100}
-.row-blue{background:#BBDEFB}.row-green{background:#C8E6C9}.row-red{background:#FFCDD2}.row-amber{background:#FFF9C4}
-.row-purple{background:#BBDEFB}.row-teal{background:#C8E6C9}.row-pink{background:#FCE4EC}.row-gray{background:#EEE}
-.row-yellow{background:#FFF9C4}.row-orange{background:#FFE0B2}
+.dot-blue{background:#BDD7EE}.dot-green{background:#D9EAD3}.dot-red{background:#F4CCCC}.dot-amber{background:#FFF2CC}
+.dot-purple{background:#BDD7EE}.dot-teal{background:#D9EAD3}.dot-pink{background:#F4C2C2}.dot-gray{background:#E8E8E8}
+.dot-yellow{background:#FFF2CC}.dot-orange{background:#FCE5CD}.dot-white{background:#ddd}
+.row-blue{background:#EEF5FB}.row-green{background:#EEF6EC}.row-red{background:#FDF1F1}.row-amber{background:#FFFBEE}
+.row-purple{background:#EEF5FB}.row-teal{background:#EEF6EC}.row-pink{background:#FDF1F1}.row-gray{background:#F5F5F5}
+.row-yellow{background:#FFFBEE}.row-orange{background:#FEF5EE}.row-white{background:#FAFAFA}
 
 .fab { position: fixed; right: 18px; bottom: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: white; border: none; box-shadow: 0 4px 14px rgba(61,170,138,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 150; }
 .fab:active { background: var(--accent-dark); }
@@ -432,9 +433,10 @@ const API = (path, opt) => fetch(path, { ...opt, headers: { 'Content-Type':'appl
 const DOWS = ['日','月','火','水','木','金','土'];
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const COLORS = [
-  {key:'blue',   hex:'#1565C0'}, {key:'red',    hex:'#C62828'},
-  {key:'yellow', hex:'#F9A825'}, {key:'orange', hex:'#E65100'},
-  {key:'green',  hex:'#2E7D32'}, {key:'pink',   hex:'#AD1457'}
+  {key:'blue',   hex:'#BDD7EE'}, {key:'red',    hex:'#F4CCCC'},
+  {key:'yellow', hex:'#FFF2CC'}, {key:'orange', hex:'#FCE5CD'},
+  {key:'green',  hex:'#D9EAD3'}, {key:'pink',   hex:'#F4C2C2'},
+  {key:'white',  hex:'#FFFFFF'}
 ];
 
 let data = { events: [], fixedSchedules: {}, fixedExceptions: {} };
@@ -1001,13 +1003,14 @@ function drawCalendar(canvas, W, H, year, month) {
 
   // セル描画（テキスト2行対応・下から積み上げ）
   const colorMap = {
-    blue:'#1565C0', red:'#C62828', yellow:'#F9A825', orange:'#E65100', green:'#2E7D32', pink:'#AD1457',
-    // 旧色の後方互換
-    amber:'#F9A825', purple:'#1565C0', teal:'#2E7D32', gray:'#555555'
+    blue:'#BDD7EE', red:'#F4CCCC', yellow:'#FFF2CC', orange:'#FCE5CD',
+    green:'#D9EAD3', pink:'#F4C2C2', white:'#FFFFFF',
+    amber:'#FFF2CC', purple:'#BDD7EE', teal:'#D9EAD3', gray:'#E8E8E8'
   };
   const fgMap = {
-    blue:'#fff', red:'#fff', yellow:'#333', orange:'#fff', green:'#fff', pink:'#fff',
-    amber:'#333', purple:'#fff', teal:'#fff', gray:'#fff'
+    blue:'#1a1a1a', red:'#1a1a1a', yellow:'#1a1a1a', orange:'#1a1a1a',
+    green:'#1a1a1a', pink:'#1a1a1a', white:'#1a1a1a',
+    amber:'#1a1a1a', purple:'#1a1a1a', teal:'#1a1a1a', gray:'#1a1a1a'
   };
 
   // ── 補助関数：テキストを折り返して最大2行で描画（x=中央座標） ──
@@ -1113,8 +1116,8 @@ function drawCalendar(canvas, W, H, year, month) {
     let curEvY = evStartY + lineH;
     for (let i = 0; i < mainCount; i++) {
       const { ev, label, wrap, lines } = evInfos[i];
-      const bgColor = colorMap[ev.color||'blue'] || '#1565C0';
-      const fgColor = fgMap[ev.color||'blue'] || '#fff';
+      const bgColor = colorMap[ev.color||'blue'] || '#BDD7EE';
+      const fgColor = '#1a1a1a';
       const barH = (lines * lineH) + (lines > 1 ? lineGap * 0.5 : 0) + lineGap * 0.3;
 
       ctx.fillStyle = bgColor;
@@ -1122,6 +1125,15 @@ function drawCalendar(canvas, W, H, year, month) {
         ctx.beginPath(); ctx.roundRect(x + PAD_L, curEvY - lineH + 1, evW, barH, 2); ctx.fill();
       } else {
         ctx.fillRect(x + PAD_L, curEvY - lineH + 1, evW, barH);
+      }
+      // 白色の場合は枠線を追加
+      if ((ev.color||'') === 'white') {
+        ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = 0.5;
+        if (ctx.roundRect) {
+          ctx.beginPath(); ctx.roundRect(x + PAD_L, curEvY - lineH + 1, evW, barH, 2); ctx.stroke();
+        } else {
+          ctx.strokeRect(x + PAD_L, curEvY - lineH + 1, evW, barH);
+        }
       }
       ctx.font = `600 ${textFs}px -apple-system,sans-serif`;
       drawWrappedText(ctx, label, x + PAD_L + 2, curEvY, evW - 4, lineH, fgColor);
@@ -1141,8 +1153,8 @@ function drawCalendar(canvas, W, H, year, month) {
       const overLineH = overFs * 1.15;
 
       for (const { ev, label } of overflow) {
-        const bgColor = colorMap[ev.color||'blue'] || '#1565C0';
-        const fgColor = fgMap[ev.color||'blue'] || '#fff';
+        const bgColor = colorMap[ev.color||'blue'] || '#BDD7EE';
+        const fgColor = '#1a1a1a';
         ctx.font = `600 ${overFs}px -apple-system,sans-serif`;
 
         // テキストを幅に合わせて切り詰め
