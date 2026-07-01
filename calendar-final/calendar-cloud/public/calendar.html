@@ -628,7 +628,7 @@ function renderDayList() {
   document.getElementById('sel-day-dow').textContent = DOWS[dow] + '曜日';
 
   const rawEvts = getEventsForDay(year, month, day);
-  const fixedEvts = rawEvts.filter(e => e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+  const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順
   const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
   const evts = [...fixedEvts, ...indivEvts];
   const el = document.getElementById('day-list');
@@ -1055,9 +1055,9 @@ function drawCalendar(canvas, W, H, year, month) {
     ctx.fillText(String(day), x+colW*0.5, y+rowH*0.22);
 
     // 予定取得：
-    // 積み上げ順 → 一番下：固定予定（時系列）→ その上：個別予定（時系列）
+    // 積み上げ順 → 一番下：固定予定（登録順）→ その上：個別予定（時系列）
     const rawEvts = getEventsForDay(year, month, day);
-    const fixedEvts = rawEvts.filter(e => e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
+    const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順（ソートなし）
     const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
     // 描画順：下から → 固定（一番下）、個別（その上）
     // 表示上は上から読みやすい順に見えるよう、個別を先に（上段）、固定を後に（下段）並べる
