@@ -943,7 +943,7 @@ function changePdfMonth(d) {
 
 function renderPdfPreview() {
   document.getElementById('pdf-month-title').textContent = pdfYear+'年'+MONTHS[pdfMonth-1];
-  drawCalendar(document.getElementById('pdf-canvas'), 794, 560, pdfYear, pdfMonth);
+  drawCalendar(document.getElementById('pdf-canvas'), 1240, 877, pdfYear, pdfMonth);
 }
 
 function drawCalendar(canvas, W, H, year, month) {
@@ -1200,20 +1200,22 @@ function drawCalendar(canvas, W, H, year, month) {
 
 async function dlPDF() {
   const btn = document.getElementById('pdf-btn');
-  btn.disabled = true; btn.textContent = '生成中...';
+  btn.disabled = true; btn.textContent = '生成中...（少しお待ちください）';
   await new Promise(r => setTimeout(r, 50));
-  const W = 1123, H = 794;
+  // A4横 300dpi = 3508×2480px（高解像度印刷品質）
+  const W = 3508, H = 2480;
   const c = document.createElement('canvas');
   drawCalendar(c, W, H, pdfYear, pdfMonth);
   if (window.jspdf) {
     const {jsPDF} = window.jspdf;
-    const pdf = new jsPDF({orientation:'landscape',unit:'px',format:[W,H]});
-    pdf.addImage(c.toDataURL('image/png'),'PNG',0,0,W,H);
+    // A4横 mm単位で指定（297×210mm）
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 297, 210);
     pdf.save(`calendar_${pdfYear}_${String(pdfMonth).padStart(2,'0')}.pdf`);
   } else {
     const a = document.createElement('a');
-    a.href = c.toDataURL('image/png');
-    a.download = `calendar_${pdfYear}_${String(pdfMonth).padStart(2,'0')}.png`;
+    a.href = c.toDataURL('image/jpeg', 0.95);
+    a.download = `calendar_${pdfYear}_${String(pdfMonth).padStart(2,'0')}.jpg`;
     a.click();
   }
   btn.disabled = false;
