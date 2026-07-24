@@ -15,6 +15,11 @@ const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'L9tH4ZwQbp-yJjj-47K7
 webpush.setVapidDetails('mailto:admin@example.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function sbRequest(method, table, body, query) {
