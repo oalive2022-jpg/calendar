@@ -329,7 +329,7 @@ app.post('/api/config/password', requireAdmin, async (req, res) => {
 async function checkReminders() {
   try {
     const r = await sbGet('user_data', '?select=user_id,push_subscriptions,events');
-    if (!r.data) return;
+    if (!r.data || !Array.isArray(r.data)) return;
     const now = new Date();
     for (const row of r.data) {
       const subs = row.push_subscriptions || [];
