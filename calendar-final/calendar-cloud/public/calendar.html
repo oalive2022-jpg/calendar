@@ -309,7 +309,7 @@ canvas { display: block; width: 100%; }
         </div>
       </div>
       <div class="field-label">予定名</div>
-      <input type="text" id="ev-text" placeholder="例：会議、通院">
+      <input type="text" id="ev-text" placeholder="例：会議、通院" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <div class="field-label">色</div>
       <div class="color-grid" id="ev-color-grid"></div>
       <div class="field-label">🔔 通知（時刻が設定された予定のみ）</div>
@@ -367,7 +367,7 @@ canvas { display: block; width: 100%; }
       </div>
       <div>
         <div class="field-label">予定名</div>
-        <input type="text" id="fixed-text" placeholder="例：朝礼">
+        <input type="text" id="fixed-text" placeholder="例：朝礼" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
     </div>
     <div class="field-label">色</div>
@@ -404,7 +404,7 @@ canvas { display: block; width: 100%; }
         </div>
         <div>
           <div class="field-label">予定名</div>
-          <input type="text" id="fe-text" placeholder="予定名">
+          <input type="text" id="fe-text" placeholder="予定名" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
       </div>
       <div class="field-label">色</div>
@@ -480,6 +480,15 @@ let feMode = 'modify'; // 'modify' | 'skip'
   renderCalendar();
   renderPdfPreview();
   initPushUI();
+
+  // IME入力中の誤送信防止
+  let isComposing = false;
+  document.addEventListener('compositionstart', () => { isComposing = true; });
+  document.addEventListener('compositionend', () => { isComposing = false; });
+  // Enterキーで誤送信しないよう制御
+  document.querySelectorAll('input[type="text"]').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && isComposing) e.preventDefault(); });
+  });
 })();
 
 async function loadData() {
@@ -636,9 +645,9 @@ function renderDayList() {
   document.getElementById('sel-day-dow').textContent = DOWS[dow] + '曜日';
 
   const rawEvts = getEventsForDay(year, month, day);
-  const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順
-  const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
-  const evts = [...fixedEvts, ...indivEvts];
+  const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順（一番下）
+  const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1); // 時系列（上）
+  const evts = [...indivEvts, ...fixedEvts];
   const el = document.getElementById('day-list');
   if (!evts.length) { el.innerHTML = '<div class="day-empty">予定はありません</div>'; return; }
 
@@ -1079,9 +1088,9 @@ function drawCalendar(canvas, W, H, year, month) {
 
     // ── 予定：上から縦に並べる（固定→個別、時系列） ──
     const rawEvts = getEventsForDay(year, month, day);
-    const fixedEvts = rawEvts.filter(e => e.fixed);
-    const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1);
-    const evts = [...fixedEvts, ...indivEvts];
+    const fixedEvts = rawEvts.filter(e => e.fixed); // 登録順（一番下）
+    const indivEvts = rawEvts.filter(e => !e.fixed).sort((a,b) => (a.ts||'') > (b.ts||'') ? 1 : -1); // 時系列（上）
+    const evts = [...indivEvts, ...fixedEvts];
 
     if (!evts.length) continue;
 
