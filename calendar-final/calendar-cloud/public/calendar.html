@@ -1121,8 +1121,19 @@ function drawCalendar(canvas, W, H, year, month) {
       mainCount++;
     }
 
-    // メインエリアに描画
-    let curEvY = evStartY + lineH;
+    // 下詰めで描画：セル下端から逆順に積み上げ
+    // まず表示する予定の合計高さを計算
+    const showInfos = evInfos.slice(0, mainCount);
+    let totalH = 0;
+    showInfos.forEach((info, i) => {
+      const barH = (info.lines * lineH) + (info.lines > 1 ? lineGap * 0.5 : 0) + lineGap * 0.3;
+      totalH += barH + (i > 0 ? lineGap * 0.5 : 0);
+    });
+
+    // 下端から開始Y座標を計算
+    const bottomY = y + rowH - PAD_L;
+    let curEvY = bottomY - totalH + lineH;
+
     for (let i = 0; i < mainCount; i++) {
       const { ev, label, wrap, lines } = evInfos[i];
       const bgColor = colorMap[ev.color||'blue'] || '#BDD7EE';
